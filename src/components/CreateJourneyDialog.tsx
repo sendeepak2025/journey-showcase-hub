@@ -11,11 +11,13 @@ import { PlusCircle, ImagePlus, Plus, Trash2, Info } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import axios from "axios"
 
 const actionSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   imageUrl: z.string().optional(),
+  type:z.enum(["customer", "backoffice"])
 });
 
 const touchpointSchema = z.object({
@@ -75,6 +77,7 @@ export default function CreateJourneyDialog() {
                   title: "",
                   description: "",
                   imageUrl: "",
+                  type:"customer"
                 }
               ]
             }
@@ -84,13 +87,47 @@ export default function CreateJourneyDialog() {
     },
   });
 
-  const onSubmit = (data: JourneyFormValues) => {
-    console.log("Journey Data:", data);
-    toast.success("Journey created successfully!");
-    setOpen(false);
-    form.reset();
+  // const onSubmit = (data: JourneyFormValues) => {
+  //   console.log("Journey Data:", data);
+  //   return
+  //   toast.success("Journey created successfully!");
+  //   setOpen(false);
+  //   form.reset();
+  // };
+
+
+  const onSubmit = async (data: JourneyFormValues) => {
+    try {
+      // Send the data to the backend
+      const response = await axios.post('http://localhost:5000/api/reports', data);
+  
+      // If successful, show success toast and reset the form
+      toast.success('Journey created successfully!');
+      console.log('Journey Data:', data);
+      // setOpen(false);  // Close the dialog
+      // form.reset();  // Reset the form
+  
+    } catch (error) {
+      // In case of error, show error toast
+      console.error("There was an error creating the journey:", error);
+      toast.error('Error creating journey!');
+    }
   };
 
+
+  const handleActionTypeChange = (
+    stageIndex: number,
+    touchpointIndex: number,
+    actionIndex: number,
+    value: 'customer' | 'backoffice'
+  ) => {
+    form.setValue(
+      `stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.type`,
+      value
+    );
+  };
+  
+  
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, stageIndex: number, touchpointIndex: number, actionIndex: number) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -115,6 +152,7 @@ export default function CreateJourneyDialog() {
     const currentIndicators = form.getValues("performanceIndicators");
     currentIndicators.push({ name: "", value: 0 });
     form.setValue("performanceIndicators", currentIndicators);
+    console.log(form.getValues())
   };
 
   const removePerformanceIndicator = (index: number) => {
@@ -558,25 +596,35 @@ export default function CreateJourneyDialog() {
                                     open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`]}
                                     onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`)}
                                   >
-                                    <div className="flex items-center justify-between p-2 border-b bg-gray-50">
-                                      <span className="text-xs font-medium">Action {actionIndex + 1}</span>
-                                      <div className="flex items-center gap-1">
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => removeAction(stageIndex, touchpointIndex, actionIndex)}
-                                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                        <CollapsibleTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-6 text-xs">
-                                            {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`] ? 'Hide' : 'Show'}
-                                          </Button>
-                                        </CollapsibleTrigger>
-                                      </div>
-                                    </div>
+                                <div className="flex items-center justify-between p-2 border-b bg-gray-50">
+  <span className="text-xs font-medium">Action {actionIndex + 1}</span>
+  <div className="flex items-center gap-2">
+    <select
+      value={action.type}
+      onChange={(e) => handleActionTypeChange(stageIndex, touchpointIndex, actionIndex, e.target.value as 'customer' | 'backoffice')}
+      className="text-xs border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+    >
+      <option value="customer">Customer</option>
+      <option value="backoffice">Backoffice</option>
+    </select>
+
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={() => removeAction(stageIndex, touchpointIndex, actionIndex)}
+      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
+    >
+      <Trash2 className="h-3 w-3" />
+    </Button>
+    <CollapsibleTrigger asChild>
+      <Button variant="ghost" size="sm" className="h-6 text-xs">
+        {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`] ? 'Hide' : 'Show'}
+      </Button>
+    </CollapsibleTrigger>
+  </div>
+</div>
+
                                     
                                     <CollapsibleContent className="p-3 space-y-3">
                                       <FormField

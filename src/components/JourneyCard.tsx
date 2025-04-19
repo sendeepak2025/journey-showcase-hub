@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 type JourneyCardProps = {
+  _id: string;
   title: string;
   npsScore: number;
   customerSentiment: number;
@@ -16,6 +17,7 @@ type JourneyCardProps = {
 };
 
 const JourneyCard: React.FC<JourneyCardProps> = ({
+  _id,
   title,
   npsScore,
   customerSentiment,
@@ -78,7 +80,7 @@ const JourneyCard: React.FC<JourneyCardProps> = ({
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-5">
         <div className="flex justify-between items-start mb-4">
-          <h3 className={`text-2xl font-bold ${title === 'iJoin' ? 'text-journey-ijoin' : title === 'iPay' ? 'text-journey-ipay' : 'text-journey-imove'}`}>
+          <h3 className={`text-2xl font-bold`}>
             {title}
           </h3>
           <div className="flex items-center">
@@ -171,16 +173,13 @@ const JourneyCard: React.FC<JourneyCardProps> = ({
         </div>
 
         <Link 
-          to={`/${title.toLowerCase()}`} 
-          className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md border ${
-            title === 'iJoin' ? 'border-journey-ijoin text-journey-ijoin hover:bg-journey-ijoin hover:text-white' : 
-            title === 'iPay' ? 'border-journey-ipay text-journey-ipay hover:bg-journey-ipay hover:text-white' : 
-            'border-journey-imove text-journey-imove hover:bg-journey-imove hover:text-white'
-          } transition-colors`}
-        >
-          <span>View Journey Details</span>
-          <ArrowRight size={16} />
-        </Link>
+  to={`/${_id}`} 
+  className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-[rgb(54_22_74_/var(--tw-bg-opacity))] text-white border-none hover:bg-[rgb(54_22_74_/var(--tw-bg-opacity))] transition-colors`}
+>
+  <span>View Journey Details</span>
+  <ArrowRight size={16} />
+</Link>
+
       </div>
     </div>
   );

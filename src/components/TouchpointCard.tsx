@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock } from 'lucide-react';
 
@@ -12,6 +11,7 @@ type TouchpointCardProps = {
     title: string;
     description: string;
     image: string;
+    type: 'customer' | 'backoffice'; // Make sure action type is defined in each action
   }[];
   activeTab: 'customer' | 'backoffice';
   onTabChange: (tab: 'customer' | 'backoffice') => void;
@@ -65,8 +65,8 @@ const TouchpointCard: React.FC<TouchpointCardProps> = ({
         <div className="flex">
           <button
             className={`flex-1 py-2 text-sm font-medium border-b-2 ${
-              activeTab === 'customer' 
-                ? 'border-purple-600 text-purple-600' 
+              activeTab === 'customer'
+                ? 'border-purple-600 text-purple-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
             onClick={() => onTabChange('customer')}
@@ -75,8 +75,8 @@ const TouchpointCard: React.FC<TouchpointCardProps> = ({
           </button>
           <button
             className={`flex-1 py-2 text-sm font-medium border-b-2 ${
-              activeTab === 'backoffice' 
-                ? 'border-purple-600 text-purple-600' 
+              activeTab === 'backoffice'
+                ? 'border-purple-600 text-purple-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
             onClick={() => onTabChange('backoffice')}
@@ -88,21 +88,23 @@ const TouchpointCard: React.FC<TouchpointCardProps> = ({
       
       <div className="p-4">
         <div className="space-y-4">
-          {actions.map((action, index) => (
-            <div key={index} className="flex">
-              <div className="mr-4 flex-shrink-0">
-                <img 
-                  src={action.image} 
-                  alt={action.title} 
-                  className="w-16 h-16 object-cover rounded border border-gray-200"
-                />
+          {actions
+            .filter(action => action.type === activeTab) // Show actions based on the selected tab
+            .map((action, index) => (
+              <div key={index} className="flex">
+                <div className="mr-4 flex-shrink-0">
+                  <img 
+                    src={action.image} 
+                    alt={action.title} 
+                    className="w-16 h-16 object-cover rounded border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <h4 className="font-medium mb-1">{action.title}</h4>
+                  <p className="text-sm text-gray-600">{action.description}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-medium mb-1">{action.title}</h4>
-                <p className="text-sm text-gray-600">{action.description}</p>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>
