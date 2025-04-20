@@ -40,22 +40,7 @@ const Header = () => {
             </svg>
             <h1 className="text-xl font-bold text-gray-800">Journey Showcase Hub</h1>
           </div>
-          <nav>
-            <ul className="flex gap-6">
-              <li>
-                <Link to="/" className="text-gray-600 hover:text-gray-900">Overview</Link>
-              </li>
-              <li>
-                <Link to="/ijoin" className="text-gray-600 hover:text-gray-900">iJoin</Link>
-              </li>
-              <li>
-                <Link to="/ipay" className="text-gray-600 hover:text-gray-900">iPay</Link>
-              </li>
-              <li>
-                <Link to="/imove" className="text-gray-600 hover:text-gray-900">iMove</Link>
-              </li>
-            </ul>
-          </nav>
+ 
         </div>
       </div>
     </header>

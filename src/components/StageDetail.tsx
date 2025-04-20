@@ -15,6 +15,7 @@ type StageDetailProps = {
       title: string;
       description: string;
       image: string;
+      type: 'customer' | 'backoffice'; // Make sure action type is defined in each action
     }[];
   }[];
 };
@@ -43,7 +44,7 @@ const StageDetail: React.FC<StageDetailProps> = ({
       {touchpoints.map((touchpoint, index) => (
         <TouchpointCard
           key={index}
-          number={touchpoint.number}
+          number={index+1}
           title={touchpoint.title}
           performanceValue={touchpoint.performanceValue}
           type={touchpoint.type}
