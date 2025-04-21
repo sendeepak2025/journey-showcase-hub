@@ -13,7 +13,8 @@ const Index = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/reports');
+        const response = await axios.get('https://journey.mahitechnocrafts.in/api/reports');
+        // const response = await axios.get('http://localhost:5000/api/reports');
         console.log(response.data)
         setReports(response.data); // Set the fetched reports to state
       } catch (err) {

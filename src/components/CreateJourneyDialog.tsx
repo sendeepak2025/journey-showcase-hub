@@ -99,7 +99,8 @@ export default function CreateJourneyDialog() {
   const onSubmit = async (data: JourneyFormValues) => {
     try {
       // Send the data to the backend
-      const response = await axios.post('http://localhost:5000/api/reports', data);
+      // const response = await axios.post('http://localhost:5000/api/reports', data);
+      const response = await axios.post('https://journey.mahitechnocrafts.in/api/reports', data);
   
       // If successful, show success toast and reset the form
       toast.success('Journey created successfully!');
