@@ -1,42 +1,43 @@
+"use client"
 
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusCircle, ImagePlus, Plus, Trash2, Info } from 'lucide-react';
-import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { toast } from "sonner";
+import React from "react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { PlusCircle, ImagePlus, Plus, Trash2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { toast } from "sonner"
 import axios from "axios"
 
 const actionSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   imageUrl: z.string().optional(),
-  type:z.enum(["customer", "backoffice"])
-});
+  type: z.string(),
+})
 
 const touchpointSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   type: z.string().min(2, "Type must be at least 2 characters"),
   duration: z.string().min(2, "Duration must be at least 2 characters"),
   actions: z.array(actionSchema).min(1, "At least one action is required"),
-});
+})
 
 const stageSchema = z.object({
-  name: z.enum(["awareness", "consideration", "quote"]),
+  name: z.string(),
   description: z.string().min(10, "Description must be at least 10 characters"),
   touchpoints: z.array(touchpointSchema).min(1, "At least one touchpoint is required"),
-});
+})
 
 const performanceIndicatorSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   value: z.number().min(0).max(100),
-});
+})
 
 const journeyFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -45,13 +46,35 @@ const journeyFormSchema = z.object({
   keyInsight: z.string().min(10, "Key insight must be at least 10 characters"),
   performanceIndicators: z.array(performanceIndicatorSchema).min(1, "At least one performance indicator is required"),
   stages: z.array(stageSchema).min(1, "At least one stage is required"),
-});
+})
 
-type JourneyFormValues = z.infer<typeof journeyFormSchema>;
+type JourneyFormValues = z.infer<typeof journeyFormSchema>
 
 export default function CreateJourneyDialog() {
-  const [open, setOpen] = React.useState(false);
-  const [expandedSections, setExpandedSections] = React.useState<{[key: string]: boolean}>({});
+  const [open, setOpen] = React.useState(false)
+  const [expandedSections, setExpandedSections] = React.useState<{ [key: string]: boolean }>({})
+  const [performanceIndicators, setPerformanceIndicators] = React.useState([{ name: "Conversion", value: 0 }])
+  const [stages, setStages] = React.useState([
+    {
+      name: "awareness" as const,
+      description: "",
+      touchpoints: [
+        {
+          title: "",
+          type: "Digital",
+          duration: "",
+          actions: [
+            {
+              title: "",
+              description: "",
+              imageUrl: "",
+              type: "customer" as const,
+            },
+          ],
+        },
+      ],
+    },
+  ])
 
   const form = useForm<JourneyFormValues>({
     resolver: zodResolver(journeyFormSchema),
@@ -60,198 +83,224 @@ export default function CreateJourneyDialog() {
       npsScore: 0,
       customerSentiment: 0,
       keyInsight: "",
-      performanceIndicators: [
-        { name: "Conversion", value: 0 },
-      ],
-      stages: [
-        {
-          name: "awareness",
-          description: "",
-          touchpoints: [
-            {
-              title: "",
-              type: "Digital",
-              duration: "",
-              actions: [
-                {
-                  title: "",
-                  description: "",
-                  imageUrl: "",
-                  type:"customer"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      performanceIndicators: performanceIndicators,
+      stages: stages,
     },
-  });
+    mode: "onBlur", // Validate fields when they lose focus
+  })
 
-  // const onSubmit = (data: JourneyFormValues) => {
-  //   console.log("Journey Data:", data);
-  //   return
-  //   toast.success("Journey created successfully!");
-  //   setOpen(false);
-  //   form.reset();
-  // };
+  // Update form when state changes
+  React.useEffect(() => {
+    form.setValue("performanceIndicators", performanceIndicators)
+  }, [performanceIndicators, form])
 
+  React.useEffect(() => {
+    form.setValue("stages", stages)
+  }, [stages, form])
 
   const onSubmit = async (data: JourneyFormValues) => {
     try {
-      // Send the data to the backend
-      // const response = await axios.post('http://localhost:5000/api/reports', data);
-      const response = await axios.post('https://journey.mahitechnocrafts.in/api/reports', data);
-  
-      // If successful, show success toast and reset the form
-      toast.success('Journey created successfully!');
-      console.log('Journey Data:', data);
-      // setOpen(false);  // Close the dialog
-      // form.reset();  // Reset the form
-  
-    } catch (error) {
-      // In case of error, show error toast
-      console.error("There was an error creating the journey:", error);
-      toast.error('Error creating journey!');
-    }
-  };
+      console.log("Submitting journey data:", data)
 
+      // Send the data to the backend
+      const response = await axios.post("https://journey.mahitechnocrafts.in/api/reports", data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      // If successful, show success toast and reset the form
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Journey created successfully!")
+        console.log("Journey created:", response.data)
+        setOpen(false) // Close the dialog after successful submission
+        form.reset() // Reset the form
+      } else {
+        throw new Error(`Server responded with status: ${response.status}`)
+      }
+    } catch (error) {
+      // In case of error, show error toast with more details
+      console.error("There was an error creating the journey:", error)
+
+      // Extract error message if available
+      let errorMessage = "Error creating journey!"
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = `Error (${error.response.status}): ${error.response.data?.message || "Unknown error"}`
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      toast.error(errorMessage)
+    }
+  }
 
   const handleActionTypeChange = (
     stageIndex: number,
     touchpointIndex: number,
     actionIndex: number,
-    value: 'customer' | 'backoffice'
+    value: "customer" | "backoffice",
   ) => {
-    form.setValue(
-      `stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.type`,
-      value
-    );
-  };
-  
-  
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, stageIndex: number, touchpointIndex: number, actionIndex: number) => {
-    const file = e.target.files?.[0];
+    const newStages = [...stages]
+    newStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].type = value
+    setStages(newStages)
+  }
+
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    stageIndex: number,
+    touchpointIndex: number,
+    actionIndex: number,
+  ) => {
+    const file = e.target.files?.[0]
     if (file) {
       // Here you would typically upload the file to your storage service
       // For now, we'll just create a temporary URL
-      const imageUrl = URL.createObjectURL(file);
-      
-      const currentStages = form.getValues("stages");
-      currentStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].imageUrl = imageUrl;
-      form.setValue("stages", currentStages);
+      const imageUrl = URL.createObjectURL(file)
+
+      const newStages = [...stages]
+      newStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].imageUrl = imageUrl
+      setStages(newStages)
     }
-  };
+  }
 
   const toggleSection = (sectionKey: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }));
-  };
+      [sectionKey]: !prev[sectionKey],
+    }))
+  }
 
-  const addPerformanceIndicator = () => {
-    const currentIndicators = form.getValues("performanceIndicators");
-    currentIndicators.push({ name: "", value: 0 });
-    form.setValue("performanceIndicators", currentIndicators);
-    console.log(form.getValues())
-  };
+  const addPerformanceIndicator = (e: React.MouseEvent) => {
+    // Stop event propagation to prevent any parent handlers from executing
+    e.stopPropagation()
+    e.preventDefault()
 
-  const removePerformanceIndicator = (index: number) => {
-    const currentIndicators = form.getValues("performanceIndicators");
-    if (currentIndicators.length > 1) {
-      currentIndicators.splice(index, 1);
-      form.setValue("performanceIndicators", currentIndicators);
+    // Create a deep copy of the current indicators
+    setPerformanceIndicators([...performanceIndicators, { name: "", value: 0 }])
+  }
+
+  const removePerformanceIndicator = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    if (performanceIndicators.length > 1) {
+      const newIndicators = [...performanceIndicators]
+      newIndicators.splice(index, 1)
+      setPerformanceIndicators(newIndicators)
     } else {
-      toast.error("You need at least one performance indicator");
+      toast.error("You need at least one performance indicator")
     }
-  };
+  }
 
-  const addStage = () => {
-    const currentStages = form.getValues("stages");
-    currentStages.push({
-      name: "awareness",
+  const addStage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const newStage = {
+      name: "awareness" as const,
       description: "",
-      touchpoints: [{
-        title: "",
-        type: "Digital",
-        duration: "",
-        actions: [{ title: "", description: "", imageUrl: "" }]
-      }]
-    });
-    form.setValue("stages", currentStages);
-    
-    // Auto-expand the newly added stage
-    const newSectionKey = `stage-${currentStages.length - 1}`;
-    setExpandedSections(prev => ({
-      ...prev,
-      [newSectionKey]: true
-    }));
-  };
-
-  const removeStage = (index: number) => {
-    const currentStages = form.getValues("stages");
-    if (currentStages.length > 1) {
-      currentStages.splice(index, 1);
-      form.setValue("stages", currentStages);
-    } else {
-      toast.error("You need at least one stage");
+      touchpoints: [
+        {
+          title: "",
+          type: "Digital",
+          duration: "",
+          actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
+        },
+      ],
     }
-  };
 
-  const addTouchpoint = (stageIndex: number) => {
-    const currentStages = form.getValues("stages");
-    currentStages[stageIndex].touchpoints.push({
+    setStages([...stages, newStage])
+
+    // Auto-expand the newly added stage
+    const newSectionKey = `stage-${stages.length}`
+    setExpandedSections((prev) => ({
+      ...prev,
+      [newSectionKey]: true,
+    }))
+  }
+
+  const removeStage = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    if (stages.length > 1) {
+      const newStages = [...stages]
+      newStages.splice(index, 1)
+      setStages(newStages)
+    } else {
+      toast.error("You need at least one stage")
+    }
+  }
+
+  const addTouchpoint = (e: React.MouseEvent, stageIndex: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const newStages = [...stages]
+    newStages[stageIndex].touchpoints.push({
       title: "",
       type: "Digital",
       duration: "",
-      actions: [{ title: "", description: "", imageUrl: "" }]
-    });
-    form.setValue("stages", currentStages);
-    
+      actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
+    })
+    setStages(newStages)
+
     // Auto-expand the newly added touchpoint
-    const newSectionKey = `stage-${stageIndex}-touchpoint-${currentStages[stageIndex].touchpoints.length - 1}`;
-    setExpandedSections(prev => ({
+    const newSectionKey = `stage-${stageIndex}-touchpoint-${newStages[stageIndex].touchpoints.length - 1}`
+    setExpandedSections((prev) => ({
       ...prev,
-      [newSectionKey]: true
-    }));
-  };
+      [newSectionKey]: true,
+    }))
+  }
 
-  const removeTouchpoint = (stageIndex: number, touchpointIndex: number) => {
-    const currentStages = form.getValues("stages");
-    if (currentStages[stageIndex].touchpoints.length > 1) {
-      currentStages[stageIndex].touchpoints.splice(touchpointIndex, 1);
-      form.setValue("stages", currentStages);
+  const removeTouchpoint = (e: React.MouseEvent, stageIndex: number, touchpointIndex: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const newStages = [...stages]
+    if (newStages[stageIndex].touchpoints.length > 1) {
+      newStages[stageIndex].touchpoints.splice(touchpointIndex, 1)
+      setStages(newStages)
     } else {
-      toast.error("You need at least one touchpoint per stage");
+      toast.error("You need at least one touchpoint per stage")
     }
-  };
+  }
 
-  const addAction = (stageIndex: number, touchpointIndex: number) => {
-    const currentStages = form.getValues("stages");
-    currentStages[stageIndex].touchpoints[touchpointIndex].actions.push({
+  const addAction = (e: React.MouseEvent, stageIndex: number, touchpointIndex: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const newStages = [...stages]
+    newStages[stageIndex].touchpoints[touchpointIndex].actions.push({
       title: "",
       description: "",
       imageUrl: "",
-    });
-    form.setValue("stages", currentStages);
-    
-    // Auto-expand the newly added action
-    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${currentStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1}`;
-    setExpandedSections(prev => ({
-      ...prev,
-      [newSectionKey]: true
-    }));
-  };
+      type: "customer" as const,
+    })
+    setStages(newStages)
 
-  const removeAction = (stageIndex: number, touchpointIndex: number, actionIndex: number) => {
-    const currentStages = form.getValues("stages");
-    if (currentStages[stageIndex].touchpoints[touchpointIndex].actions.length > 1) {
-      currentStages[stageIndex].touchpoints[touchpointIndex].actions.splice(actionIndex, 1);
-      form.setValue("stages", currentStages);
+    // Auto-expand the newly added action
+    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${
+      newStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1
+    }`
+    setExpandedSections((prev) => ({
+      ...prev,
+      [newSectionKey]: true,
+    }))
+  }
+
+  const removeAction = (e: React.MouseEvent, stageIndex: number, touchpointIndex: number, actionIndex: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const newStages = [...stages]
+    if (newStages[stageIndex].touchpoints[touchpointIndex].actions.length > 1) {
+      newStages[stageIndex].touchpoints[touchpointIndex].actions.splice(actionIndex, 1)
+      setStages(newStages)
     } else {
-      toast.error("You need at least one action per touchpoint");
+      toast.error("You need at least one action per touchpoint")
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -266,7 +315,13 @@ export default function CreateJourneyDialog() {
           <DialogTitle className="text-xl font-bold text-purple-700">Create New Journey</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={(e) => {
+              console.log("Form submission triggered", form.formState.errors)
+              form.handleSubmit(onSubmit)(e)
+            }}
+            className="space-y-6"
+          >
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -281,7 +336,7 @@ export default function CreateJourneyDialog() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -290,19 +345,19 @@ export default function CreateJourneyDialog() {
                     <FormItem>
                       <FormLabel>NPS Score (0-100)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0" 
+                        <Input
+                          type="number"
+                          min="0"
                           max="100"
                           {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="customerSentiment"
@@ -310,12 +365,12 @@ export default function CreateJourneyDialog() {
                     <FormItem>
                       <FormLabel>Customer Sentiment (0-100)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0" 
+                        <Input
+                          type="number"
+                          min="0"
                           max="100"
                           {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -323,7 +378,7 @@ export default function CreateJourneyDialog() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="keyInsight"
@@ -331,10 +386,10 @@ export default function CreateJourneyDialog() {
                   <FormItem>
                     <FormLabel>Key Insight</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Enter key insight about this journey"
                         className="min-h-[100px]"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -346,18 +401,18 @@ export default function CreateJourneyDialog() {
               <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-purple-700">Key Performance Indicators</h3>
-                  <Button 
+                  <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={addPerformanceIndicator}
+                    onClick={(e) => addPerformanceIndicator(e)}
                     className="border-purple-400 text-purple-700 hover:bg-purple-50"
                   >
                     <Plus className="h-4 w-4 mr-1" /> Add Indicator
                   </Button>
                 </div>
-                
-                {form.getValues("performanceIndicators").map((indicator, index) => (
+
+                {performanceIndicators.map((indicator, index) => (
                   <div key={index} className="flex items-end gap-4 p-3 bg-white rounded-md border border-gray-200">
                     <FormField
                       control={form.control}
@@ -372,7 +427,7 @@ export default function CreateJourneyDialog() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name={`performanceIndicators.${index}.value`}
@@ -380,24 +435,24 @@ export default function CreateJourneyDialog() {
                         <FormItem className="flex-1">
                           <FormLabel>Value (%)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
+                            <Input
+                              type="number"
+                              min="0"
                               max="100"
                               {...field}
-                              onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                              onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removePerformanceIndicator(index)}
+                      onClick={(e) => removePerformanceIndicator(e, index)}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50 mb-0.5"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -410,20 +465,20 @@ export default function CreateJourneyDialog() {
               <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-purple-700">Journey Stages</h3>
-                  <Button 
+                  <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={addStage}
+                    onClick={(e) => addStage(e)}
                     className="border-purple-400 text-purple-700 hover:bg-purple-50"
                   >
                     <Plus className="h-4 w-4 mr-1" /> Add Stage
                   </Button>
                 </div>
-                
-                {form.getValues("stages").map((stage, stageIndex) => (
-                  <Collapsible 
-                    key={stageIndex} 
+
+                {stages.map((stage, stageIndex) => (
+                  <Collapsible
+                    key={stageIndex}
                     className="border rounded-lg bg-white shadow-sm"
                     open={expandedSections[`stage-${stageIndex}`]}
                     onOpenChange={() => toggleSection(`stage-${stageIndex}`)}
@@ -435,19 +490,19 @@ export default function CreateJourneyDialog() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeStage(stageIndex)}
+                          onClick={(e) => removeStage(e, stageIndex)}
                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            {expandedSections[`stage-${stageIndex}`] ? 'Hide Details' : 'Show Details'}
+                            {expandedSections[`stage-${stageIndex}`] ? "Hide Details" : "Show Details"}
                           </Button>
                         </CollapsibleTrigger>
                       </div>
                     </div>
-                    
+
                     <CollapsibleContent className="p-4 space-y-4">
                       <FormField
                         control={form.control}
@@ -459,6 +514,12 @@ export default function CreateJourneyDialog() {
                               <select
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 {...field}
+                                onChange={(e) => {
+                                  field.onChange(e)
+                                  const newStages = [...stages]
+                                  newStages[stageIndex].name = e.target.value as "awareness" | "consideration" | "quote"
+                                  setStages(newStages)
+                                }}
                               >
                                 <option value="awareness">Awareness</option>
                                 <option value="consideration">Consideration</option>
@@ -477,10 +538,16 @@ export default function CreateJourneyDialog() {
                           <FormItem>
                             <FormLabel>Stage Description</FormLabel>
                             <FormControl>
-                              <Textarea 
+                              <Textarea
                                 placeholder="Describe this stage"
                                 className="min-h-[80px]"
-                                {...field} 
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e)
+                                  const newStages = [...stages]
+                                  newStages[stageIndex].description = e.target.value
+                                  setStages(newStages)
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -492,11 +559,11 @@ export default function CreateJourneyDialog() {
                       <div className="space-y-3 mt-4">
                         <div className="flex justify-between items-center">
                           <h5 className="text-sm font-medium text-gray-700">Touchpoints</h5>
-                          <Button 
+                          <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => addTouchpoint(stageIndex)}
+                            onClick={(e) => addTouchpoint(e, stageIndex)}
                             className="border-purple-300 text-purple-600 hover:bg-purple-50 h-7 px-2 text-xs"
                           >
                             <Plus className="h-3 w-3 mr-1" /> Add Touchpoint
@@ -504,8 +571,8 @@ export default function CreateJourneyDialog() {
                         </div>
 
                         {stage.touchpoints.map((touchpoint, touchpointIndex) => (
-                          <Collapsible 
-                            key={touchpointIndex} 
+                          <Collapsible
+                            key={touchpointIndex}
                             className="border rounded-md bg-gray-50"
                             open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]}
                             onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}`)}
@@ -517,19 +584,21 @@ export default function CreateJourneyDialog() {
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => removeTouchpoint(stageIndex, touchpointIndex)}
+                                  onClick={(e) => removeTouchpoint(e, stageIndex, touchpointIndex)}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                                 <CollapsibleTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-7 text-xs">
-                                    {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`] ? 'Hide' : 'Show'}
+                                    {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]
+                                      ? "Hide"
+                                      : "Show"}
                                   </Button>
                                 </CollapsibleTrigger>
                               </div>
                             </div>
-                            
+
                             <CollapsibleContent className="p-3 space-y-3 bg-white rounded-b-md">
                               <FormField
                                 control={form.control}
@@ -538,7 +607,17 @@ export default function CreateJourneyDialog() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Touchpoint Title</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g., Website Visit" {...field} className="text-sm" />
+                                      <Input
+                                        placeholder="e.g., Website Visit"
+                                        {...field}
+                                        className="text-sm"
+                                        onChange={(e) => {
+                                          field.onChange(e)
+                                          const newStages = [...stages]
+                                          newStages[stageIndex].touchpoints[touchpointIndex].title = e.target.value
+                                          setStages(newStages)
+                                        }}
+                                      />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -553,7 +632,17 @@ export default function CreateJourneyDialog() {
                                     <FormItem>
                                       <FormLabel className="text-sm">Type</FormLabel>
                                       <FormControl>
-                                        <Input placeholder="e.g., Digital" {...field} className="text-sm" />
+                                        <Input
+                                          placeholder="e.g., Digital"
+                                          {...field}
+                                          className="text-sm"
+                                          onChange={(e) => {
+                                            field.onChange(e)
+                                            const newStages = [...stages]
+                                            newStages[stageIndex].touchpoints[touchpointIndex].type = e.target.value
+                                            setStages(newStages)
+                                          }}
+                                        />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -567,7 +656,17 @@ export default function CreateJourneyDialog() {
                                     <FormItem>
                                       <FormLabel className="text-sm">Duration</FormLabel>
                                       <FormControl>
-                                        <Input placeholder="e.g., 5-7 mins" {...field} className="text-sm" />
+                                        <Input
+                                          placeholder="e.g., 5-7 mins"
+                                          {...field}
+                                          className="text-sm"
+                                          onChange={(e) => {
+                                            field.onChange(e)
+                                            const newStages = [...stages]
+                                            newStages[stageIndex].touchpoints[touchpointIndex].duration = e.target.value
+                                            setStages(newStages)
+                                          }}
+                                        />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -579,11 +678,11 @@ export default function CreateJourneyDialog() {
                               <div className="space-y-2 mt-3">
                                 <div className="flex justify-between items-center">
                                   <h6 className="text-xs font-medium text-gray-700">Actions</h6>
-                                  <Button 
+                                  <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => addAction(stageIndex, touchpointIndex)}
+                                    onClick={(e) => addAction(e, stageIndex, touchpointIndex)}
                                     className="border-purple-200 text-purple-600 hover:bg-purple-50 h-6 px-2 text-xs"
                                   >
                                     <Plus className="h-3 w-3 mr-1" /> Add Action
@@ -591,42 +690,60 @@ export default function CreateJourneyDialog() {
                                 </div>
 
                                 {touchpoint.actions.map((action, actionIndex) => (
-                                  <Collapsible 
-                                    key={actionIndex} 
+                                  <Collapsible
+                                    key={actionIndex}
                                     className="border rounded-md"
-                                    open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`]}
-                                    onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`)}
+                                    open={
+                                      expandedSections[
+                                        `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                      ]
+                                    }
+                                    onOpenChange={() =>
+                                      toggleSection(
+                                        `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`,
+                                      )
+                                    }
                                   >
-                                <div className="flex items-center justify-between p-2 border-b bg-gray-50">
-  <span className="text-xs font-medium">Action {actionIndex + 1}</span>
-  <div className="flex items-center gap-2">
-    <select
-      value={action.type}
-      onChange={(e) => handleActionTypeChange(stageIndex, touchpointIndex, actionIndex, e.target.value as 'customer' | 'backoffice')}
-      className="text-xs border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-    >
-      <option value="customer">Customer</option>
-      <option value="backoffice">Backoffice</option>
-    </select>
+                                    <div className="flex items-center justify-between p-2 border-b bg-gray-50">
+                                      <span className="text-xs font-medium">Action {actionIndex + 1}</span>
+                                      <div className="flex items-center gap-2">
+                                        <select
+                                          value={action.type}
+                                          onChange={(e) =>
+                                            handleActionTypeChange(
+                                              stageIndex,
+                                              touchpointIndex,
+                                              actionIndex,
+                                              e.target.value as "customer" | "backoffice",
+                                            )
+                                          }
+                                          className="text-xs border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        >
+                                          <option value="customer">Customer</option>
+                                          <option value="backoffice">Backoffice</option>
+                                        </select>
 
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={() => removeAction(stageIndex, touchpointIndex, actionIndex)}
-      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
-    >
-      <Trash2 className="h-3 w-3" />
-    </Button>
-    <CollapsibleTrigger asChild>
-      <Button variant="ghost" size="sm" className="h-6 text-xs">
-        {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`] ? 'Hide' : 'Show'}
-      </Button>
-    </CollapsibleTrigger>
-  </div>
-</div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => removeAction(e, stageIndex, touchpointIndex, actionIndex)}
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                        <CollapsibleTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-6 text-xs">
+                                            {expandedSections[
+                                              `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                            ]
+                                              ? "Hide"
+                                              : "Show"}
+                                          </Button>
+                                        </CollapsibleTrigger>
+                                      </div>
+                                    </div>
 
-                                    
                                     <CollapsibleContent className="p-3 space-y-3">
                                       <FormField
                                         control={form.control}
@@ -635,7 +752,19 @@ export default function CreateJourneyDialog() {
                                           <FormItem>
                                             <FormLabel className="text-xs">Action Title</FormLabel>
                                             <FormControl>
-                                              <Input placeholder="e.g., View Homepage" {...field} className="text-xs h-8" />
+                                              <Input
+                                                placeholder="e.g., View Homepage"
+                                                {...field}
+                                                className="text-xs h-8"
+                                                onChange={(e) => {
+                                                  field.onChange(e)
+                                                  const newStages = [...stages]
+                                                  newStages[stageIndex].touchpoints[touchpointIndex].actions[
+                                                    actionIndex
+                                                  ].title = e.target.value
+                                                  setStages(newStages)
+                                                }}
+                                              />
                                             </FormControl>
                                             <FormMessage />
                                           </FormItem>
@@ -649,10 +778,18 @@ export default function CreateJourneyDialog() {
                                           <FormItem>
                                             <FormLabel className="text-xs">Action Description</FormLabel>
                                             <FormControl>
-                                              <Textarea 
+                                              <Textarea
                                                 placeholder="Describe this action"
                                                 className="min-h-[60px] text-xs"
-                                                {...field} 
+                                                {...field}
+                                                onChange={(e) => {
+                                                  field.onChange(e)
+                                                  const newStages = [...stages]
+                                                  newStages[stageIndex].touchpoints[touchpointIndex].actions[
+                                                    actionIndex
+                                                  ].description = e.target.value
+                                                  setStages(newStages)
+                                                }}
                                               />
                                             </FormControl>
                                             <FormMessage />
@@ -663,7 +800,10 @@ export default function CreateJourneyDialog() {
                                       <div className="space-y-2">
                                         <FormLabel className="text-xs">Action Image</FormLabel>
                                         <div className="flex items-center gap-2 border p-2 rounded-md bg-gray-50">
-                                          <label htmlFor={`image-${stageIndex}-${touchpointIndex}-${actionIndex}`} className="cursor-pointer flex items-center justify-center rounded-md border border-dashed px-3 py-2 text-xs text-gray-500 hover:bg-gray-100">
+                                          <label
+                                            htmlFor={`image-${stageIndex}-${touchpointIndex}-${actionIndex}`}
+                                            className="cursor-pointer flex items-center justify-center rounded-md border border-dashed px-3 py-2 text-xs text-gray-500 hover:bg-gray-100"
+                                          >
                                             <ImagePlus className="h-4 w-4 mr-1" />
                                             Upload Image
                                           </label>
@@ -672,12 +812,14 @@ export default function CreateJourneyDialog() {
                                             type="file"
                                             accept="image/*"
                                             className="hidden"
-                                            onChange={(e) => handleImageUpload(e, stageIndex, touchpointIndex, actionIndex)}
+                                            onChange={(e) =>
+                                              handleImageUpload(e, stageIndex, touchpointIndex, actionIndex)
+                                            }
                                           />
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
                                               <img
-                                                src={action.imageUrl}
+                                                src={action.imageUrl || "/placeholder.svg"}
                                                 alt={action.title || "Action image"}
                                                 className="w-full h-full object-cover"
                                               />
@@ -698,12 +840,9 @@ export default function CreateJourneyDialog() {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex justify-end pt-2">
-              <Button 
-                type="submit" 
-                className="bg-purple-600 hover:bg-purple-700"
-              >
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
                 Create Journey
               </Button>
             </div>
@@ -711,5 +850,5 @@ export default function CreateJourneyDialog() {
         </Form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
