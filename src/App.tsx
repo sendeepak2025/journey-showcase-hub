@@ -2,30 +2,56 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import JourneyDetail from "./pages/JourneyDetail";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-
+import PrivateRoute from "@/components/auth/PrivateRoute";
+import OpenRoute from "@/components/auth/OpenRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/:journeyId" element={<JourneyDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-          <Sonner />
-        </AuthProvider>
+
+        <Routes>
+          <Route path="/" element={
+
+            <PrivateRoute>
+              <Index />
+            </PrivateRoute>
+
+
+
+          } />
+          <Route path="/:journeyId" element={
+
+            <PrivateRoute>
+              <JourneyDetail />
+            </PrivateRoute>
+
+          } />
+          <Route path="/login" element={
+
+            <OpenRoute>
+              <Login />
+            </OpenRoute>
+
+
+          } />
+          <Route path="/register" element={
+
+            <OpenRoute>
+              <Register />
+            </OpenRoute>
+          } />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        <Sonner />
+
       </BrowserRouter>
     </QueryClientProvider>
   );

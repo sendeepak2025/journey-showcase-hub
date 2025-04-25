@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
+import { setToken, setUser } from '@/redux/authSlice';
+
 import { toast } from 'sonner';
+import { useDispatch } from 'react-redux';
+import axios from 'axios';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -17,7 +20,8 @@ const loginSchema = z.object({
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const dispatch = useDispatch();
+  
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -28,13 +32,42 @@ export default function Login() {
   });
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  
     try {
-      await login(values.email, values.password);
-      toast.success('Login successful!');
-      navigate('/');
+      // Show a loading message (optional)
+      toast('Logging in...', { icon: '⏳', description: 'Please wait...' });
+
+      // Make the login API request
+      const response = await axios.post('https://journey.mahitechnocrafts.in/api/auth/login', {
+      // const response = await axios.post('http://localhost:5000/api/auth/login', {
+        email: values.email,
+        password: values.password,
+      });
+
+      // Check if login was successful
+      if (response.data.success) {
+        const { token, user } = response.data;
+
+        // Dispatch token and user data to Redux store
+        dispatch(setToken(token));
+        dispatch(setUser(user));
+
+        // Optionally, store the token and user data in localStorage or cookies if needed
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Show success message
+        toast.success('Login successful!');
+
+        // Redirect the user
+        navigate('/');  // Adjust the route to where you want the user to be redirected
+      } else {
+        toast.error('Invalid email or password');
+      }
     } catch (error) {
-      toast.error('Invalid email or password');
-    }
+      console.error(error);
+      toast.error('Login failed. Please try again.');
+    } 
   };
 
   return (

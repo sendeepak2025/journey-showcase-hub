@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Clock, Globe, Eye, MousePointer, Users, BriefcaseBusiness, BarChart3 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { Activity, Settings } from 'lucide-react';
+import { CompassTag } from "@/types/journey";
 
 type TouchpointCardProps = {
   number: number
@@ -11,6 +12,8 @@ type TouchpointCardProps = {
   performanceValue: number
   type: string
   duration: string
+    comment?: string;
+   compassTags: CompassTag[];
   actions: {
     title: string
     description: string
@@ -28,6 +31,8 @@ export default function TouchpointCard({
   type,
   duration,
   actions,
+  compassTags,
+  comment,
   activeTab = 'customer',
   onTabChange = () => {},
 }: TouchpointCardProps) {
@@ -51,6 +56,17 @@ export default function TouchpointCard({
     if (title.toLowerCase().includes('office') || title.toLowerCase().includes('process')) return <BriefcaseBusiness className="w-6 h-6 text-orange-500" />
     return <BarChart3 className="w-6 h-6 text-gray-500" />
   }
+
+
+  const tagConfig = {
+    cognitive: { label: 'C', color: 'bg-red-100 text-red-800 hover:bg-red-200' },
+    orchestrated: { label: 'O', color: 'bg-orange-100 text-orange-800 hover:bg-orange-200' },
+    memorable: { label: 'M', color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' },
+    perceived: { label: 'P', color: 'bg-green-100 text-green-800 hover:bg-green-200' },
+    activate: { label: 'A', color: 'bg-blue-100 text-blue-800 hover:bg-blue-200' },
+    social: { label: 'S', color: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200' },
+    situational: { label: 'S', color: 'bg-violet-100 text-violet-800 hover:bg-violet-200' },
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg mb-6 overflow-hidden shadow-sm">
@@ -77,6 +93,26 @@ export default function TouchpointCard({
           </div>
         </div>
       </div>
+
+
+{/* Compass Tags Display */}
+{compassTags.length > 0 && (
+  <div className="p-4 pt-0 flex flex-wrap gap-2">
+    {compassTags.map((tag) => {
+      const config = tagConfig[tag];
+      const label = tag.charAt(0).toUpperCase() + tag.slice(1); // Capitalized label
+      return (
+        <span
+          key={tag}
+          className={`text-xs font-medium px-2.5 py-0.5 rounded ${config.color}`}
+        >
+          {label}
+        </span>
+      );
+    })}
+  </div>
+)}
+
 
       <div className="flex lg:w-[35%] border-b border-gray-100 text-sm font-medium text-gray-600">
   <button

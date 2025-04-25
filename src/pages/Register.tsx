@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { setToken, setUser } from '@/redux/authSlice';
+import { useDispatch } from 'react-redux';
+import axios from 'axios';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,8 +23,8 @@ const registerSchema = z.object({
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
-  
+  const dispatch = useDispatch();
+
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -34,11 +36,26 @@ export default function Register() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      // Fixed register function call by passing an empty string as the third parameter (name)
-      await register(values.email, values.password, '');
-      toast.success('Registration successful!');
-      navigate('/');
+      const response = await axios.post('https://journey.mahitechnocrafts.in/api/auth/register', {
+
+      // const response = await axios.post('http://localhost:5000/api/auth/register', {
+        email: values.email,
+        password: values.password,
+      });
+  
+      if (response.data.success) {
+        const { token, user } = response.data;
+        // Dispatch token and user data to Redux store
+        dispatch(setToken(token));
+        dispatch(setUser(user));
+  
+        toast.success('Registration successful!');
+        navigate('/');
+      } else {
+        toast.error('Registration failed. Please try again.');
+      }
     } catch (error) {
+      console.error(error);
       toast.error('Registration failed. Please try again.');
     }
   };

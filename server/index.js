@@ -2,7 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const reportRoutes = require('./routes/reportRoutes'); // Adjust the path as needed
+const reportRoutes = require('./routes/reportRoutes');
+const authRoute = require('./routes/authRoute');
 
 dotenv.config();
 const app = express();
@@ -16,7 +17,8 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
-app.use('/api/reports', reportRoutes); // Ensure this is correctly mapped
+app.use('/api/reports', reportRoutes);
+app.use('/api/auth', authRoute);
 
 const PORT = 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

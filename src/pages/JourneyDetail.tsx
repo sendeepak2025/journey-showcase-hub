@@ -7,6 +7,7 @@ import StageDetail from '@/components/StageDetail';
 import { Button } from '@/components/ui/button';
 import { Edit, Users, Settings, FileText } from 'lucide-react';
 import axios from 'axios';
+import CreateJourneyDialog from '@/components/CreateJourneyDialog';
 
 const JourneyDetail = () => {
   const { journeyId } = useParams<{ journeyId: string }>();
@@ -18,6 +19,8 @@ const JourneyDetail = () => {
     Consideration: <Settings className="w-4 h-4 mr-2" />,
     Quote: <FileText className="w-4 h-4 mr-2" />,
   };
+
+
 
   useEffect(() => {
     const fetchJourneyData = async () => {
@@ -33,10 +36,7 @@ const JourneyDetail = () => {
     fetchJourneyData(); // Call the async function
   }, [journeyId]); // Run when journeyId changes
 
-  const handleEdit = () => {
-    // Handle edit functionality
-    console.log('Edit journey:', journeyId);
-  };
+ 
 
   if (!journeyData) return <div>Loading...</div>;
 
@@ -62,14 +62,10 @@ const JourneyDetail = () => {
                 Last updated: {new Date(journeyData.updatedAt).toLocaleDateString()}
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={handleEdit}
-            >
-              <Edit className="h-4 w-4" />
-              Edit Journey
-            </Button>
+         
+
+                        <CreateJourneyDialog id={journeyId} />
+            
           </div>
           
           <div className="mb-6">

@@ -11,7 +11,9 @@ const TouchpointSchema = new mongoose.Schema({
   title: { type: String, required: true },
   type: { type: String, required: true },
   duration: { type: String, required: true },
-  actions: [ActionSchema]
+  actions: [ActionSchema],
+  compassTags:[String],
+  comment: { type: String, }
 }, { _id: false });
 
 const StageSchema = new mongoose.Schema({

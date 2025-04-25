@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import TouchpointCard from './TouchpointCard';
+import { CompassTag } from '@/types/journey';
 
 type StageDetailProps = {
   stageName: string;
@@ -17,6 +18,8 @@ type StageDetailProps = {
       image: string;
       type: 'customer' | 'backoffice'; // Make sure action type is defined in each action
     }[];
+      comment?: string;
+      compassTags: CompassTag[];
   }[];
 };
 
@@ -24,8 +27,10 @@ const StageDetail: React.FC<StageDetailProps> = ({
   stageName,
   description,
   touchpoints,
+
 }) => {
   const [activeTabs, setActiveTabs] = useState<{ [key: number]: 'customer' | 'backoffice' }>({});
+
 
   const handleTabChange = (index: number, tab: 'customer' | 'backoffice') => {
     setActiveTabs(prev => ({
@@ -46,6 +51,8 @@ const StageDetail: React.FC<StageDetailProps> = ({
           key={index}
           number={index+1}
           title={touchpoint.title}
+          compassTags={touchpoint?.compassTags}
+          comment={touchpoint?.comment}
           performanceValue={touchpoint.performanceValue}
           type={touchpoint.type}
           duration={touchpoint.duration}

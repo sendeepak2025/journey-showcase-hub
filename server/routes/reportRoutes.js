@@ -44,3 +44,24 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+
+// PUT update report by ID
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedReport = await Report.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true } // `new: true` returns the updated document
+    );
+
+    if (!updatedReport) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    res.json(updatedReport);
+  } catch (error) {
+    console.error('Error updating report:', error);
+    res.status(400).json({ message: error.message });
+  }
+});

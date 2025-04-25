@@ -1,7 +1,7 @@
 
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -15,6 +15,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner"
 import axios from "axios"
 import { CompassTags, CompassTag } from "./CompassTags"
+import { useSelector } from "react-redux"
+import { RootState } from "@/redux/store"
 
 // Updated action schema to use enum type
 const actionSchema = z.object({
@@ -29,7 +31,7 @@ const touchpointSchema = z.object({
   type: z.string().min(2, "Type must be at least 2 characters"),
   duration: z.string().min(2, "Duration must be at least 2 characters"),
   comment: z.string().optional(),
-  compassTags: z.array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"])).optional(),
+  compassTags: z.array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"])).min(2, { message: "Select at least 2 compass tags" }),
   actions: z.array(actionSchema).min(1, "At least one action is required"),
 })
 
@@ -57,10 +59,17 @@ type JourneyFormValues = z.infer<typeof journeyFormSchema>
 type ActionType = "customer" | "backoffice";
 type StageNameType = "awareness" | "consideration" | "quote";
 
-export default function CreateJourneyDialog() {
+type CreateJourneyDialogProps = {
+  id?: string;
+};
+
+export default function CreateJourneyDialog({ id }: CreateJourneyDialogProps) {
   const [open, setOpen] = React.useState(false)
   const [expandedSections, setExpandedSections] = React.useState<{ [key: string]: boolean }>({})
   const [performanceIndicators, setPerformanceIndicators] = React.useState([{ name: "Conversion", value: 0 }])
+  const user = useSelector((state: RootState) => state.auth?.user ?? null)
+
+console.log(user)
   const [stages, setStages] = React.useState([
     {
       name: "awareness" as StageNameType,
@@ -84,6 +93,39 @@ export default function CreateJourneyDialog() {
       ],
     },
   ])
+
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const response = await axios.get(`https://journey.mahitechnocrafts.in/api/reports/${id}`);
+        // const response = await axios.get(`http://localhost:5000/api/reports/${id}`);
+        const data = response.data;
+
+        console.log("Report Data:", data);
+
+        if (data) {
+          form.reset({
+            title: data.title || "",
+            npsScore: data.npsScore || 0,
+            customerSentiment: data.customerSentiment || 0,
+            keyInsight: data.keyInsight || "",
+            performanceIndicators: data.performanceIndicators || [{ name: "", value: 0 }],
+            stages: data.stages || [],
+          });
+          setStages(data.stages || [])
+        }
+      } catch (error) {
+        console.error("Error fetching report:", error);
+      }
+    };
+
+    if (id && open) {
+      fetchReport();
+    }
+  }, [id, open]);
+
+
 
   const form = useForm<JourneyFormValues>({
     resolver: zodResolver(journeyFormSchema),
@@ -109,57 +151,85 @@ export default function CreateJourneyDialog() {
 
   const onSubmit = async (data: JourneyFormValues) => {
     try {
-      console.log("Submitting journey data:", data)
+      console.log("Submitting journey data:", data);
 
-      // Send the data to the backend
-      const response = await axios.post("https://journey.mahitechnocrafts.in/api/reports", data, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      const config = {
+        headers: { "Content-Type": "application/json" },
+      };
 
-      // If successful, show success toast and reset the form
-      if (response.status === 200 || response.status === 201) {
-        toast.success("Journey created successfully!")
-        console.log("Journey created:", response.data)
-        setOpen(false) // Close the dialog after successful submission
-        form.reset() // Reset the form
+      let response;
+
+      if (id) {
+        // Update existing journey
+        // response = await axios.put(`http://localhost:5000/api/reports/${id}`, data, config);
+        response = await axios.put(`https://journey.mahitechnocrafts.in/api/reports/${id}`, data, config);
       } else {
-        throw new Error(`Server responded with status: ${response.status}`)
+        // Create new journey
+        // response = await axios.post(`http://localhost:5000/api/reports`, data, config);
+        response = await axios.post(`https://journey.mahitechnocrafts.in/api/reports`, data, config);
       }
+
+      if (response.status === 200 || response.status === 201) {
+        const message = id ? "Journey updated successfully!" : "Journey created successfully!";
+        toast.success(message);
+        console.log("Journey saved:", response.data);
+        setOpen(false); // Close modal
+        form.reset();    // Reset form state
+      } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
+
     } catch (error) {
-      // In case of error, show error toast with more details
-      console.error("There was an error creating the journey:", error)
+      console.error("Error saving journey:", error);
 
-      // Extract error message if available
-      let errorMessage = "Error creating journey!"
+      let errorMessage = "Something went wrong!";
       if (axios.isAxiosError(error) && error.response) {
-        errorMessage = `Error (${error.response.status}): ${error.response.data?.message || "Unknown error"}`
+        errorMessage = `Error (${error.response.status}): ${error.response.data?.message || "Unknown error"}`;
       } else if (error instanceof Error) {
-        errorMessage = error.message
+        errorMessage = error.message;
       }
 
-      toast.error(errorMessage)
+      toast.error(errorMessage);
     }
-  }
+  };
+
 
   const handleCompassTagToggle = (
     stageIndex: number,
     touchpointIndex: number,
     tag: CompassTag
   ) => {
-    const newStages = [...stages];
-    const currentTouchpoint = newStages[stageIndex].touchpoints[touchpointIndex];
-    const tags = currentTouchpoint.compassTags || [];
-    
-    if (tags.includes(tag)) {
-      currentTouchpoint.compassTags = tags.filter(t => t !== tag);
-    } else {
-      currentTouchpoint.compassTags = [...tags, tag];
-    }
-    
+    // Deep clone the
+    //  stages to avoid mutating original state
+
+
+    const newStages = stages.map((stage, sIdx) => {
+      if (sIdx !== stageIndex) return stage; // Only modify the selected stage
+
+      return {
+        ...stage, // Keep other properties of the stage intact
+        touchpoints: stage.touchpoints.map((tp, tIdx) => {
+          if (tIdx !== touchpointIndex) return tp; // Only modify the selected touchpoint
+
+          const currentTags = tp.compassTags || [];
+          const updatedTags = currentTags.includes(tag)
+            ? currentTags.filter((t) => t !== tag) // Remove tag if it exists
+            : [...currentTags, tag]; // Add the tag if it doesn't exist
+
+          return {
+            ...tp, // Keep other properties of the touchpoint intact
+            compassTags: updatedTags, // Update only the compassTags
+          };
+        }),
+      };
+    });
+
+    // Set the updated stages to the state
     setStages(newStages);
   };
+
+
+
 
   const handleActionTypeChange = (
     stageIndex: number,
@@ -311,9 +381,8 @@ export default function CreateJourneyDialog() {
     setStages(newStages)
 
     // Auto-expand the newly added action
-    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${
-      newStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1
-    }`
+    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${newStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1
+      }`
     setExpandedSections((prev) => ({
       ...prev,
       [newSectionKey]: true,
@@ -333,32 +402,23 @@ export default function CreateJourneyDialog() {
     }
   }
 
-  const handleEdit = () => {
-    // TODO: Implement edit journey functionality
-    toast.info('Edit journey functionality coming soon!');
-  };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
+      { user && user?.role === "admin" &&  <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
           <PlusCircle className="h-5 w-5" />
-          Create Journey
-        </Button>
+          {
+            id ? "Edit Journey" : "Create Journey"
+          }
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold text-purple-700">Create New Journey</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleEdit}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
+            <DialogTitle className="text-xl font-bold text-purple-700">{id ? "Edit Journey" : "Create New Journey"}</DialogTitle>
+
           </div>
         </DialogHeader>
         <Form {...form}>
@@ -746,14 +806,38 @@ export default function CreateJourneyDialog() {
                                 )}
                               />
 
-                              <div className="space-y-2">
-                                <FormLabel className="text-sm">Compass Tags</FormLabel>
-                                <CompassTags
-                                  selectedTags={touchpoint.compassTags || []}
-                                  onTagSelect={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
-                                  onTagRemove={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
-                                />
-                              </div>
+                              <FormField
+                                control={form.control}
+                                name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.compassTags`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Compass Tags</FormLabel>
+                                    <CompassTags
+                                      selectedTags={field.value || []}
+                                      onTagSelect={(tag) => {
+                                        const updated = [...(field.value || []), tag];
+                                        field.onChange(updated);
+
+                                        // update local state for UI sync
+                                        const newStages = [...stages];
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
+                                        setStages(newStages);
+                                      }}
+                                      onTagRemove={(tag) => {
+                                        const updated = (field.value || []).filter((t) => t !== tag);
+                                        field.onChange(updated);
+
+                                        // update local state for UI sync
+                                        const newStages = [...stages];
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
+                                        setStages(newStages);
+                                      }}
+                                    />
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
 
                               {/* Actions Section */}
                               <div className="space-y-2 mt-3">
@@ -776,7 +860,7 @@ export default function CreateJourneyDialog() {
                                     className="border rounded-md"
                                     open={
                                       expandedSections[
-                                        `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                      `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
                                       ]
                                     }
                                     onOpenChange={() =>
@@ -899,9 +983,9 @@ export default function CreateJourneyDialog() {
                                           />
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
-                                              <img 
-                                                src={action.imageUrl} 
-                                                alt="Action preview" 
+                                              <img
+                                                src={action.imageUrl}
+                                                alt="Action preview"
                                                 className="w-full h-full object-cover"
                                               />
                                             </div>
@@ -923,7 +1007,10 @@ export default function CreateJourneyDialog() {
             </div>
             <div className="flex justify-end">
               <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                Create Journey
+
+                {
+                  id ? "Edit Journey" : "Create Journey"
+                }
               </Button>
             </div>
           </form>
