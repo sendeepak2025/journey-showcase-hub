@@ -3,15 +3,15 @@ import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import JourneyStageProgress from '@/components/JourneyStageProgress';
 import StageDetail from '@/components/StageDetail';
+import { Button } from '@/components/ui/button';
+import { Edit, Users, Settings, FileText } from 'lucide-react';
 import axios from 'axios';
-import { Users, Settings, FileText } from 'lucide-react'; // example icons
 
 const JourneyDetail = () => {
   const { journeyId } = useParams<{ journeyId: string }>();
   const [activeStage, setActiveStage] = useState<string>('awareness');
+  const [journeyData, setJourneyData] = useState<any>(null);
 
-  const [journeyData, setJourneyData] = useState<any>(null); // State to store the fetched data
- 
   const stageIcons = {
     Awareness: <Users className="w-4 h-4 mr-2" />,
     Consideration: <Settings className="w-4 h-4 mr-2" />,
@@ -32,7 +32,12 @@ const JourneyDetail = () => {
     fetchJourneyData(); // Call the async function
   }, [journeyId]); // Run when journeyId changes
 
-  if (!journeyData) return <div>Loading...</div>; // Show loading if data is not fetched yet
+  const handleEdit = () => {
+    // Handle edit functionality
+    console.log('Edit journey:', journeyId);
+  };
+
+  if (!journeyData) return <div>Loading...</div>;
 
   // Get the current journey details from the backend data
   const currentJourney = journeyData;
@@ -47,37 +52,49 @@ const JourneyDetail = () => {
       
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-          <div className="flex flex-col g3 justify-between mb-6">
-            <h1 className={`text-3xl font-bold text-gray-900`}>
-              {currentJourney.title} Journey Details
-            </h1>
-            <p className="text-sm text-gray-500">Last updated: {new Date(currentJourney.updatedAt).toLocaleDateString()}</p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className={`text-3xl font-bold text-gray-900`}>
+                {journeyData.title} Journey Details
+              </h1>
+              <p className="text-sm text-gray-500">
+                Last updated: {new Date(journeyData.updatedAt).toLocaleDateString()}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handleEdit}
+            >
+              <Edit className="h-4 w-4" />
+              Edit Journey
+            </Button>
           </div>
           
-          {/* <JourneyStageProgress stages={currentJourney.stages} /> */}
-          
           <div className="mb-6">
-  <div className="flex flex-wrap gap-3">
-    {['Awareness', 'Consideration', 'Quote']
-      .filter(stageName => currentJourney.stages.some((stage: any) => stage.name.toLowerCase() === stageName.toLowerCase()))
-      .map((stageName, index) => (
-        <button
-          key={index}
-          className={`flex items-center px-4 py-2 rounded-md text-xl font-medium ${
-            activeStage === stageName.toLowerCase()
-              ? 'bg-[rgb(54_22_74_/var(--tw-bg-opacity))] text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-          onClick={() => setActiveStage(stageName.toLowerCase())}
-        >
-          {stageIcons[stageName]}
-          {stageName}
-        </button>
-    ))}
-  </div>
-</div>
-
-
+            <div className="flex flex-wrap gap-3">
+              {['Awareness', 'Consideration', 'Quote']
+                .filter(stageName => 
+                  journeyData.stages.some((stage: any) => 
+                    stage.name.toLowerCase() === stageName.toLowerCase()
+                  )
+                )
+                .map((stageName, index) => (
+                  <button
+                    key={index}
+                    className={`flex items-center px-4 py-2 rounded-md text-xl font-medium ${
+                      activeStage === stageName.toLowerCase()
+                        ? 'bg-[rgb(54_22_74_/var(--tw-bg-opacity))] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    onClick={() => setActiveStage(stageName.toLowerCase())}
+                  >
+                    {stageIcons[stageName]}
+                    {stageName}
+                  </button>
+              ))}
+            </div>
+          </div>
 
           {currentStageDetails && (
             <StageDetail 
