@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
 import axios from "axios"
+import { CompassTags, CompassTag } from "./CompassTags"
 
 const actionSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -25,6 +26,8 @@ const touchpointSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   type: z.string().min(2, "Type must be at least 2 characters"),
   duration: z.string().min(2, "Duration must be at least 2 characters"),
+  comment: z.string().optional(),
+  compassTags: z.array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"])).optional(),
   actions: z.array(actionSchema).min(1, "At least one action is required"),
 })
 
@@ -133,6 +136,24 @@ export default function CreateJourneyDialog() {
       toast.error(errorMessage)
     }
   }
+
+  const handleCompassTagToggle = (
+    stageIndex: number,
+    touchpointIndex: number,
+    tag: CompassTag
+  ) => {
+    const newStages = [...stages];
+    const currentTouchpoint = newStages[stageIndex].touchpoints[touchpointIndex];
+    const tags = currentTouchpoint.compassTags || [];
+    
+    if (tags.includes(tag)) {
+      currentTouchpoint.compassTags = tags.filter(t => t !== tag);
+    } else {
+      currentTouchpoint.compassTags = [...tags, tag];
+    }
+    
+    setStages(newStages);
+  };
 
   const handleActionTypeChange = (
     stageIndex: number,
@@ -674,6 +695,40 @@ export default function CreateJourneyDialog() {
                                 />
                               </div>
 
+                              {/* Inside the touchpoint form section, after the duration field */}
+                              <FormField
+                                control={form.control}
+                                name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.comment`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Comment (Optional)</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Add any additional notes..."
+                                        className="min-h-[60px] text-sm"
+                                        {...field}
+                                        onChange={(e) => {
+                                          field.onChange(e);
+                                          const newStages = [...stages];
+                                          newStages[stageIndex].touchpoints[touchpointIndex].comment = e.target.value;
+                                          setStages(newStages);
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <div className="space-y-2">
+                                <FormLabel className="text-sm">Compass Tags</FormLabel>
+                                <CompassTags
+                                  selectedTags={touchpoint.compassTags || []}
+                                  onTagSelect={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
+                                  onTagRemove={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
+                                />
+                              </div>
+
                               {/* Actions Section */}
                               <div className="space-y-2 mt-3">
                                 <div className="flex justify-between items-center">
@@ -844,11 +899,3 @@ export default function CreateJourneyDialog() {
             <div className="flex justify-end pt-2">
               <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
                 Create Journey
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  )
-}
