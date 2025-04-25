@@ -62,7 +62,7 @@ const Header = () => {
                 strokeLinejoin="round"
               />
             </svg>
-            <h1 className="text-xl font-bold text-gray-800">Journey Showcase Hub</h1>
+            <Link to='/' className="text-xl font-bold text-gray-800">Journey Showcase Hub</Link>
           </div>
 
           {/* User Profile and Logout */}
@@ -75,7 +75,7 @@ const Header = () => {
                 <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold">
                   {createProfileImage(user)}
                 </div>
-                <span className="text-gray-800">{user?.email}</span>
+             
               </button>
 
               {isDropdownOpen && (
