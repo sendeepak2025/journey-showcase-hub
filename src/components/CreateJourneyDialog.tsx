@@ -898,3 +898,4 @@ export default function CreateJourneyDialog() {
 
             <div className="flex justify-end pt-2">
               <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                Create Journey
