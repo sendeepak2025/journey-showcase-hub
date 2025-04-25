@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect } from "react"
@@ -64,7 +65,6 @@ type CreateJourneyDialogProps = {
 
 export default function CreateJourneyDialog({ id }: CreateJourneyDialogProps) {
   const [open, setOpen] = React.useState(false)
-  const [mode, setMode] = React.useState<'create' | 'edit'>('create')
   const [expandedSections, setExpandedSections] = React.useState<{ [key: string]: boolean }>({})
   const [performanceIndicators, setPerformanceIndicators] = React.useState([{ name: "Conversion", value: 0 }])
   const user = useSelector((state: RootState) => state.auth?.user ?? null)
@@ -149,28 +149,32 @@ console.log(user)
     form.setValue("stages", stages)
   }, [stages, form])
 
-  const handleEditClick = () => {
-    setMode('edit');
-    setOpen(true);
-  };
-
   const onSubmit = async (data: JourneyFormValues) => {
     try {
-      console.log("Submitting journey data:", data)
+      console.log("Submitting journey data:", data);
 
-      // Send the data to the backend
-      const response = await axios.post("https://journey.mahitechnocrafts.in/api/reports", data, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      const config = {
+        headers: { "Content-Type": "application/json" },
+      };
 
-      // If successful, show success toast and reset the form
+      let response;
+
+      if (id) {
+        // Update existing journey
+        // response = await axios.put(`http://localhost:5000/api/reports/${id}`, data, config);
+        response = await axios.put(`https://journey.mahitechnocrafts.in/api/reports/${id}`, data, config);
+      } else {
+        // Create new journey
+        // response = await axios.post(`http://localhost:5000/api/reports`, data, config);
+        response = await axios.post(`http://localhost:5000/api/reports`, data, config);
+      }
+
       if (response.status === 200 || response.status === 201) {
-        toast.success("Journey created successfully!")
-        console.log("Journey created:", response.data)
-        setOpen(false) // Close the dialog after successful submission
-        form.reset() // Reset the form
+        const message = id ? "Journey updated successfully!" : "Journey created successfully!";
+        toast.success(message);
+        console.log("Journey saved:", response.data);
+        setOpen(false); // Close modal
+        form.reset();    // Reset form state
       } else {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
@@ -403,24 +407,18 @@ console.log(user)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
+      { user && user?.role === "admin" &&  <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
           <PlusCircle className="h-5 w-5" />
-          Create Journey
-        </Button>
+          {
+            id ? "Edit Journey" : "Create Journey"
+          }
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold text-purple-700">Create New Journey</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleEdit}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
+            <DialogTitle className="text-xl font-bold text-purple-700">{id ? "Edit Journey" : "Create New Journey"}</DialogTitle>
+
           </div>
         </DialogHeader>
         <Form {...form}>
@@ -446,59 +444,20 @@ console.log(user)
                 )}
               />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="npsScore"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>NPS Score (0-100)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...field}
-                            onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="customerSentiment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Customer Sentiment (0-100)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...field}
-                            onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="keyInsight"
+                  name="npsScore"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Key Insight</FormLabel>
+                      <FormLabel>NPS Score (0-100)</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Enter key insight about this journey"
-                          className="min-h-[100px]"
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
                           {...field}
+                          onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -506,31 +465,173 @@ console.log(user)
                   )}
                 />
 
-                {/* Performance Indicators Section */}
-                <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-purple-700">Key Performance Indicators</h3>
+                <FormField
+                  control={form.control}
+                  name="customerSentiment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer Sentiment (0-100)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          {...field}
+                          onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="keyInsight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Key Insight</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter key insight about this journey"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Performance Indicators Section */}
+              <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-purple-700">Key Performance Indicators</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => addPerformanceIndicator(e)}
+                    className="border-purple-400 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Indicator
+                  </Button>
+                </div>
+
+                {performanceIndicators.map((indicator, index) => (
+                  <div key={index} className="flex items-end gap-4 p-3 bg-white rounded-md border border-gray-200">
+                    <FormField
+                      control={form.control}
+                      name={`performanceIndicators.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>KPI Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Conversion Rate" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`performanceIndicators.${index}.value`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Value (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              {...field}
+                              onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={(e) => addPerformanceIndicator(e)}
-                      className="border-purple-400 text-purple-700 hover:bg-purple-50"
+                      onClick={(e) => removePerformanceIndicator(e, index)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 mb-0.5"
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Indicator
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                ))}
+              </div>
 
-                  {performanceIndicators.map((indicator, index) => (
-                    <div key={index} className="flex items-end gap-4 p-3 bg-white rounded-md border border-gray-200">
+              {/* Stages Section */}
+              <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-purple-700">Journey Stages</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => addStage(e)}
+                    className="border-purple-400 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Stage
+                  </Button>
+                </div>
+
+                {stages.map((stage, stageIndex) => (
+                  <Collapsible
+                    key={stageIndex}
+                    className="border rounded-lg bg-white shadow-sm"
+                    open={expandedSections[`stage-${stageIndex}`]}
+                    onOpenChange={() => toggleSection(`stage-${stageIndex}`)}
+                  >
+                    <div className="flex items-center justify-between p-4 border-b">
+                      <h4 className="font-medium text-purple-800">Stage {stageIndex + 1}</h4>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => removeStage(e, stageIndex)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            {expandedSections[`stage-${stageIndex}`] ? "Hide Details" : "Show Details"}
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
+                    </div>
+
+                    <CollapsibleContent className="p-4 space-y-4">
                       <FormField
                         control={form.control}
-                        name={`performanceIndicators.${index}.name`}
+                        name={`stages.${stageIndex}.name`}
                         render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>KPI Name</FormLabel>
+                          <FormItem>
+                            <FormLabel>Stage Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g., Conversion Rate" {...field} />
+                              <select
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e)
+                                  const newStages = [...stages]
+                                  newStages[stageIndex].name = e.target.value as StageNameType
+                                  setStages(newStages)
+                                }}
+                              >
+                                <option value="awareness">Awareness</option>
+                                <option value="consideration">Consideration</option>
+                                <option value="quote">Quote</option>
+                              </select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -539,17 +640,21 @@ console.log(user)
 
                       <FormField
                         control={form.control}
-                        name={`performanceIndicators.${index}.value`}
+                        name={`stages.${stageIndex}.description`}
                         render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Value (%)</FormLabel>
+                          <FormItem>
+                            <FormLabel>Stage Description</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
+                              <Textarea
+                                placeholder="Describe this stage"
+                                className="min-h-[80px]"
                                 {...field}
-                                onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                                onChange={(e) => {
+                                  field.onChange(e)
+                                  const newStages = [...stages]
+                                  newStages[stageIndex].description = e.target.value
+                                  setStages(newStages)
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -557,173 +662,91 @@ console.log(user)
                         )}
                       />
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => removePerformanceIndicator(e, index)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 mb-0.5"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Stages Section */}
-                <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-purple-700">Journey Stages</h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => addStage(e)}
-                      className="border-purple-400 text-purple-700 hover:bg-purple-50"
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add Stage
-                    </Button>
-                  </div>
-
-                  {stages.map((stage, stageIndex) => (
-                    <Collapsible
-                      key={stageIndex}
-                      className="border rounded-lg bg-white shadow-sm"
-                      open={expandedSections[`stage-${stageIndex}`]}
-                      onOpenChange={() => toggleSection(`stage-${stageIndex}`)}
-                    >
-                      <div className="flex items-center justify-between p-4 border-b">
-                        <h4 className="font-medium text-purple-800">Stage {stageIndex + 1}</h4>
-                        <div className="flex items-center gap-2">
+                      {/* Touchpoints Section */}
+                      <div className="space-y-3 mt-4">
+                        <div className="flex justify-between items-center">
+                          <h5 className="text-sm font-medium text-gray-700">Touchpoints</h5>
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={(e) => removeStage(e, stageIndex)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => addTouchpoint(e, stageIndex)}
+                            className="border-purple-300 text-purple-600 hover:bg-purple-50 h-7 px-2 text-xs"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Plus className="h-3 w-3 mr-1" /> Add Touchpoint
                           </Button>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              {expandedSections[`stage-${stageIndex}`] ? "Hide Details" : "Show Details"}
-                            </Button>
-                          </CollapsibleTrigger>
                         </div>
-                      </div>
 
-                      <CollapsibleContent className="p-4 space-y-4">
-                        <FormField
-                          control={form.control}
-                          name={`stages.${stageIndex}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Stage Name</FormLabel>
-                              <FormControl>
-                                <select
-                                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                  {...field}
-                                  onChange={(e) => {
-                                    field.onChange(e)
-                                    const newStages = [...stages]
-                                    newStages[stageIndex].name = e.target.value as StageNameType
-                                    setStages(newStages)
-                                  }}
+                        {stage.touchpoints.map((touchpoint, touchpointIndex) => (
+                          <Collapsible
+                            key={touchpointIndex}
+                            className="border rounded-md bg-gray-50"
+                            open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]}
+                            onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}`)}
+                          >
+                            <div className="flex items-center justify-between p-3 border-b">
+                              <h6 className="font-medium text-sm">Touchpoint {touchpointIndex + 1}</h6>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => removeTouchpoint(e, stageIndex, touchpointIndex)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7"
                                 >
-                                  <option value="awareness">Awareness</option>
-                                  <option value="consideration">Consideration</option>
-                                  <option value="quote">Quote</option>
-                                </select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name={`stages.${stageIndex}.description`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Stage Description</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Describe this stage"
-                                  className="min-h-[80px]"
-                                  {...field}
-                                  onChange={(e) => {
-                                    field.onChange(e)
-                                    const newStages = [...stages]
-                                    newStages[stageIndex].description = e.target.value
-                                    setStages(newStages)
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* Touchpoints Section */}
-                        <div className="space-y-3 mt-4">
-                          <div className="flex justify-between items-center">
-                            <h5 className="text-sm font-medium text-gray-700">Touchpoints</h5>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => addTouchpoint(e, stageIndex)}
-                              className="border-purple-300 text-purple-600 hover:bg-purple-50 h-7 px-2 text-xs"
-                            >
-                              <Plus className="h-3 w-3 mr-1" /> Add Touchpoint
-                            </Button>
-                          </div>
-
-                          {stage.touchpoints.map((touchpoint, touchpointIndex) => (
-                            <Collapsible
-                              key={touchpointIndex}
-                              className="border rounded-md bg-gray-50"
-                              open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]}
-                              onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}`)}
-                            >
-                              <div className="flex items-center justify-between p-3 border-b">
-                                <h6 className="font-medium text-sm">Touchpoint {touchpointIndex + 1}</h6>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => removeTouchpoint(e, stageIndex, touchpointIndex)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 text-xs">
+                                    {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]
+                                      ? "Hide"
+                                      : "Show"}
                                   </Button>
-                                  <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 text-xs">
-                                      {expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]
-                                        ? "Hide"
-                                        : "Show"}
-                                    </Button>
-                                  </CollapsibleTrigger>
-                                </div>
+                                </CollapsibleTrigger>
                               </div>
+                            </div>
 
-                              <CollapsibleContent className="p-3 space-y-3 bg-white rounded-b-md">
+                            <CollapsibleContent className="p-3 space-y-3 bg-white rounded-b-md">
+                              <FormField
+                                control={form.control}
+                                name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.title`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Touchpoint Title</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="e.g., Website Visit"
+                                        {...field}
+                                        className="text-sm"
+                                        onChange={(e) => {
+                                          field.onChange(e)
+                                          const newStages = [...stages]
+                                          newStages[stageIndex].touchpoints[touchpointIndex].title = e.target.value
+                                          setStages(newStages)
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <div className="grid grid-cols-2 gap-3">
                                 <FormField
                                   control={form.control}
-                                  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.title`}
+                                  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.type`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel className="text-sm">Touchpoint Title</FormLabel>
+                                      <FormLabel className="text-sm">Type</FormLabel>
                                       <FormControl>
                                         <Input
-                                          placeholder="e.g., Website Visit"
+                                          placeholder="e.g., Digital"
                                           {...field}
                                           className="text-sm"
                                           onChange={(e) => {
                                             field.onChange(e)
                                             const newStages = [...stages]
-                                            newStages[stageIndex].touchpoints[touchpointIndex].title = e.target.value
+                                            newStages[stageIndex].touchpoints[touchpointIndex].type = e.target.value
                                             setStages(newStages)
                                           }}
                                         />
@@ -733,73 +756,22 @@ console.log(user)
                                   )}
                                 />
 
-                                <div className="grid grid-cols-2 gap-3">
-                                  <FormField
-                                    control={form.control}
-                                    name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.type`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-sm">Type</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="e.g., Digital"
-                                            {...field}
-                                            className="text-sm"
-                                            onChange={(e) => {
-                                              field.onChange(e)
-                                              const newStages = [...stages]
-                                              newStages[stageIndex].touchpoints[touchpointIndex].type = e.target.value
-                                              setStages(newStages)
-                                            }}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-
-                                  <FormField
-                                    control={form.control}
-                                    name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.duration`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-sm">Duration</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="e.g., 5-7 mins"
-                                            {...field}
-                                            className="text-sm"
-                                            onChange={(e) => {
-                                              field.onChange(e)
-                                              const newStages = [...stages]
-                                              newStages[stageIndex].touchpoints[touchpointIndex].duration = e.target.value
-                                              setStages(newStages)
-                                            }}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
-
-                                {/* Inside the touchpoint form section, after the duration field */}
                                 <FormField
                                   control={form.control}
-                                  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.comment`}
+                                  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.duration`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel className="text-sm">Comment (Optional)</FormLabel>
+                                      <FormLabel className="text-sm">Duration</FormLabel>
                                       <FormControl>
-                                        <Textarea
-                                          placeholder="Add any additional notes..."
-                                          className="min-h-[60px] text-sm"
+                                        <Input
+                                          placeholder="e.g., 5-7 mins"
                                           {...field}
+                                          className="text-sm"
                                           onChange={(e) => {
-                                            field.onChange(e);
-                                            const newStages = [...stages];
-                                            newStages[stageIndex].touchpoints[touchpointIndex].comment = e.target.value;
-                                            setStages(newStages);
+                                            field.onChange(e)
+                                            const newStages = [...stages]
+                                            newStages[stageIndex].touchpoints[touchpointIndex].duration = e.target.value
+                                            setStages(newStages)
                                           }}
                                         />
                                       </FormControl>
@@ -807,30 +779,80 @@ console.log(user)
                                     </FormItem>
                                   )}
                                 />
-
-                              <div className="space-y-2">
-                                <FormLabel className="text-sm">Compass Tags</FormLabel>
-                                <CompassTags
-                                  selectedTags={touchpoint.compassTags || []}
-                                  onTagSelect={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
-                                  onTagRemove={(tag) => handleCompassTagToggle(stageIndex, touchpointIndex, tag)}
-                                />
                               </div>
 
-                                {/* Actions Section */}
-                                <div className="space-y-2 mt-3">
-                                  <div className="flex justify-between items-center">
-                                    <h6 className="text-xs font-medium text-gray-700">Actions</h6>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={(e) => addAction(e, stageIndex, touchpointIndex)}
-                                      className="border-purple-200 text-purple-600 hover:bg-purple-50 h-6 px-2 text-xs"
-                                    >
-                                      <Plus className="h-3 w-3 mr-1" /> Add Action
-                                    </Button>
-                                  </div>
+                              {/* Inside the touchpoint form section, after the duration field */}
+                              <FormField
+                                control={form.control}
+                                name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.comment`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Comment (Optional)</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Add any additional notes..."
+                                        className="min-h-[60px] text-sm"
+                                        {...field}
+                                        onChange={(e) => {
+                                          field.onChange(e);
+                                          const newStages = [...stages];
+                                          newStages[stageIndex].touchpoints[touchpointIndex].comment = e.target.value;
+                                          setStages(newStages);
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.compassTags`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Compass Tags</FormLabel>
+                                    <CompassTags
+                                      selectedTags={field.value || []}
+                                      onTagSelect={(tag) => {
+                                        const updated = [...(field.value || []), tag];
+                                        field.onChange(updated);
+
+                                        // update local state for UI sync
+                                        const newStages = [...stages];
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
+                                        setStages(newStages);
+                                      }}
+                                      onTagRemove={(tag) => {
+                                        const updated = (field.value || []).filter((t) => t !== tag);
+                                        field.onChange(updated);
+
+                                        // update local state for UI sync
+                                        const newStages = [...stages];
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
+                                        setStages(newStages);
+                                      }}
+                                    />
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+
+                              {/* Actions Section */}
+                              <div className="space-y-2 mt-3">
+                                <div className="flex justify-between items-center">
+                                  <h6 className="text-xs font-medium text-gray-700">Actions</h6>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => addAction(e, stageIndex, touchpointIndex)}
+                                    className="border-purple-200 text-purple-600 hover:bg-purple-50 h-6 px-2 text-xs"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" /> Add Action
+                                  </Button>
+                                </div>
 
                                 {touchpoint.actions.map((action, actionIndex) => (
                                   <Collapsible
@@ -838,7 +860,7 @@ console.log(user)
                                     className="border rounded-md"
                                     open={
                                       expandedSections[
-                                        `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                      `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
                                       ]
                                     }
                                     onOpenChange={() =>
@@ -866,79 +888,79 @@ console.log(user)
                                           <option value="backoffice">Backoffice</option>
                                         </select>
 
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => removeAction(e, stageIndex, touchpointIndex, actionIndex)}
-                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
-                                          >
-                                            <Trash2 className="h-3 w-3" />
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => removeAction(e, stageIndex, touchpointIndex, actionIndex)}
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                        <CollapsibleTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-6 text-xs">
+                                            {expandedSections[
+                                              `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                            ]
+                                              ? "Hide"
+                                              : "Show"}
                                           </Button>
-                                          <CollapsibleTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-6 text-xs">
-                                              {expandedSections[
-                                                `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
-                                              ]
-                                                ? "Hide"
-                                                : "Show"}
-                                            </Button>
-                                          </CollapsibleTrigger>
-                                        </div>
+                                        </CollapsibleTrigger>
                                       </div>
+                                    </div>
 
-                                      <CollapsibleContent className="p-3 space-y-3">
-                                        <FormField
-                                          control={form.control}
-                                          name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.title`}
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-xs">Action Title</FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., View Homepage"
-                                                  {...field}
-                                                  className="text-xs h-8"
-                                                  onChange={(e) => {
-                                                    field.onChange(e)
-                                                    const newStages = [...stages]
-                                                    newStages[stageIndex].touchpoints[touchpointIndex].actions[
-                                                      actionIndex
-                                                    ].title = e.target.value
-                                                    setStages(newStages)
-                                                  }}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
+                                    <CollapsibleContent className="p-3 space-y-3">
+                                      <FormField
+                                        control={form.control}
+                                        name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.title`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel className="text-xs">Action Title</FormLabel>
+                                            <FormControl>
+                                              <Input
+                                                placeholder="e.g., View Homepage"
+                                                {...field}
+                                                className="text-xs h-8"
+                                                onChange={(e) => {
+                                                  field.onChange(e)
+                                                  const newStages = [...stages]
+                                                  newStages[stageIndex].touchpoints[touchpointIndex].actions[
+                                                    actionIndex
+                                                  ].title = e.target.value
+                                                  setStages(newStages)
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
 
-                                        <FormField
-                                          control={form.control}
-                                          name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.description`}
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-xs">Action Description</FormLabel>
-                                              <FormControl>
-                                                <Textarea
-                                                  placeholder="Describe this action"
-                                                  className="min-h-[60px] text-xs"
-                                                  {...field}
-                                                  onChange={(e) => {
-                                                    field.onChange(e)
-                                                    const newStages = [...stages]
-                                                    newStages[stageIndex].touchpoints[touchpointIndex].actions[
-                                                      actionIndex
-                                                    ].description = e.target.value
-                                                    setStages(newStages)
-                                                  }}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
+                                      <FormField
+                                        control={form.control}
+                                        name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.actions.${actionIndex}.description`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel className="text-xs">Action Description</FormLabel>
+                                            <FormControl>
+                                              <Textarea
+                                                placeholder="Describe this action"
+                                                className="min-h-[60px] text-xs"
+                                                {...field}
+                                                onChange={(e) => {
+                                                  field.onChange(e)
+                                                  const newStages = [...stages]
+                                                  newStages[stageIndex].touchpoints[touchpointIndex].actions[
+                                                    actionIndex
+                                                  ].description = e.target.value
+                                                  setStages(newStages)
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
 
                                       <div className="space-y-2">
                                         <FormLabel className="text-xs">Action Image</FormLabel>
@@ -961,9 +983,9 @@ console.log(user)
                                           />
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
-                                              <img 
-                                                src={action.imageUrl} 
-                                                alt="Action preview" 
+                                              <img
+                                                src={action.imageUrl}
+                                                alt="Action preview"
                                                 className="w-full h-full object-cover"
                                               />
                                             </div>
@@ -985,7 +1007,10 @@ console.log(user)
             </div>
             <div className="flex justify-end">
               <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                Create Journey
+
+                {
+                  id ? "Edit Journey" : "Create Journey"
+                }
               </Button>
             </div>
           </form>
