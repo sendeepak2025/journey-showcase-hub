@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from "react"
@@ -563,7 +564,7 @@ export default function CreateJourneyDialog() {
                                 onChange={(e) => {
                                   field.onChange(e)
                                   const newStages = [...stages]
-                                  newStages[stageIndex].name = e.target.value as "awareness" | "consideration" | "quote"
+                                  newStages[stageIndex].name = e.target.value as StageNameType
                                   setStages(newStages)
                                 }}
                               >
@@ -794,7 +795,7 @@ export default function CreateJourneyDialog() {
                                               stageIndex,
                                               touchpointIndex,
                                               actionIndex,
-                                              e.target.value as "customer" | "backoffice",
+                                              e.target.value as ActionType,
                                             )
                                           }
                                           className="text-xs border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
@@ -893,4 +894,41 @@ export default function CreateJourneyDialog() {
                                             accept="image/*"
                                             className="hidden"
                                             onChange={(e) =>
-                                              handleImageUpload(e, stageIndex, touchpointIndex, actionIndex
+                                              handleImageUpload(e, stageIndex, touchpointIndex, actionIndex)
+                                            }
+                                          />
+                                          {action.imageUrl && (
+                                            <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
+                                              <img 
+                                                src={action.imageUrl} 
+                                                alt="Action preview" 
+                                                className="w-full h-full object-cover"
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CollapsibleContent>
+                                  </Collapsible>
+                                ))}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                Create Journey
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
