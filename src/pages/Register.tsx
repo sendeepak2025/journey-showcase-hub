@@ -34,7 +34,8 @@ export default function Register() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      await register(values.email, values.password);
+      // Fixed register function call - adding a third parameter (name) with an empty string
+      await register(values.email, values.password, '');
       toast.success('Registration successful!');
       navigate('/');
     } catch (error) {

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from "react"
@@ -16,6 +15,7 @@ import { toast } from "sonner"
 import axios from "axios"
 import { CompassTags, CompassTag } from "./CompassTags"
 
+// Updated action schema to use enum type
 const actionSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -53,6 +53,8 @@ const journeyFormSchema = z.object({
 })
 
 type JourneyFormValues = z.infer<typeof journeyFormSchema>
+type ActionType = "customer" | "backoffice";
+type StageNameType = "awareness" | "consideration" | "quote";
 
 export default function CreateJourneyDialog() {
   const [open, setOpen] = React.useState(false)
@@ -60,7 +62,7 @@ export default function CreateJourneyDialog() {
   const [performanceIndicators, setPerformanceIndicators] = React.useState([{ name: "Conversion", value: 0 }])
   const [stages, setStages] = React.useState([
     {
-      name: "awareness" as const,
+      name: "awareness" as StageNameType,
       description: "",
       touchpoints: [
         {
@@ -68,13 +70,13 @@ export default function CreateJourneyDialog() {
           type: "Digital",
           duration: "",
           comment: '',
-          compassTags: [],
+          compassTags: [] as CompassTag[],
           actions: [
             {
               title: "",
               description: "",
               imageUrl: "",
-              type: "customer" as const,
+              type: "customer" as ActionType,
             },
           ],
         },
@@ -162,7 +164,7 @@ export default function CreateJourneyDialog() {
     stageIndex: number,
     touchpointIndex: number,
     actionIndex: number,
-    value: "customer" | "backoffice",
+    value: ActionType,
   ) => {
     const newStages = [...stages]
     newStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].type = value
@@ -221,7 +223,7 @@ export default function CreateJourneyDialog() {
     e.preventDefault()
 
     const newStage = {
-      name: "awareness" as const,
+      name: "awareness" as StageNameType,
       description: "",
       touchpoints: [
         {
@@ -229,8 +231,8 @@ export default function CreateJourneyDialog() {
           type: "Digital",
           duration: "",
           comment: '',
-          compassTags: [],
-          actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
+          compassTags: [] as CompassTag[],
+          actions: [{ title: "", description: "", imageUrl: "", type: "customer" as ActionType }],
         },
       ],
     }
@@ -268,8 +270,8 @@ export default function CreateJourneyDialog() {
       type: "Digital",
       duration: "",
       comment: '',
-      compassTags: [],
-      actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
+      compassTags: [] as CompassTag[],
+      actions: [{ title: "", description: "", imageUrl: "", type: "customer" as ActionType }],
     })
     setStages(newStages)
 
@@ -303,7 +305,7 @@ export default function CreateJourneyDialog() {
       title: "",
       description: "",
       imageUrl: "",
-      type: "customer" as const,
+      type: "customer" as ActionType,
     })
     setStages(newStages)
 
@@ -891,42 +893,4 @@ export default function CreateJourneyDialog() {
                                             accept="image/*"
                                             className="hidden"
                                             onChange={(e) =>
-                                              handleImageUpload(e, stageIndex, touchpointIndex, actionIndex)
-                                            }
-                                          />
-                                          {action.imageUrl && (
-                                            <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
-                                              <img
-                                                src={action.imageUrl || "/placeholder.svg"}
-                                                alt={action.title || "Action image"}
-                                                className="w-full h-full object-cover"
-                                              />
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </CollapsibleContent>
-                                  </Collapsible>
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                Create Journey
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+                                              handleImageUpload(e, stageIndex, touchpointIndex, actionIndex
