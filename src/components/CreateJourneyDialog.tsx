@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from "react"
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusCircle, ImagePlus, Plus, Trash2 } from "lucide-react"
+import { PlusCircle, ImagePlus, Plus, Trash2, Edit } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
@@ -20,7 +19,7 @@ const actionSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   imageUrl: z.string().optional(),
-  type: z.string(),
+  type: z.enum(["customer", "backoffice"]),
 })
 
 const touchpointSchema = z.object({
@@ -33,7 +32,7 @@ const touchpointSchema = z.object({
 })
 
 const stageSchema = z.object({
-  name: z.string(),
+  name: z.enum(["awareness", "consideration", "quote"]),
   description: z.string().min(10, "Description must be at least 10 characters"),
   touchpoints: z.array(touchpointSchema).min(1, "At least one touchpoint is required"),
 })
@@ -67,6 +66,8 @@ export default function CreateJourneyDialog() {
           title: "",
           type: "Digital",
           duration: "",
+          comment: '',
+          compassTags: [],
           actions: [
             {
               title: "",
@@ -226,6 +227,8 @@ export default function CreateJourneyDialog() {
           title: "",
           type: "Digital",
           duration: "",
+          comment: '',
+          compassTags: [],
           actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
         },
       ],
@@ -263,6 +266,8 @@ export default function CreateJourneyDialog() {
       title: "",
       type: "Digital",
       duration: "",
+      comment: '',
+      compassTags: [],
       actions: [{ title: "", description: "", imageUrl: "", type: "customer" as const }],
     })
     setStages(newStages)
@@ -324,6 +329,12 @@ export default function CreateJourneyDialog() {
     }
   }
 
+  const handleEdit = () => {
+    // TODO: Implement edit journey functionality
+    console.log('Edit journey:', journeyId);
+    toast.info('Edit journey functionality coming soon!');
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -334,7 +345,18 @@ export default function CreateJourneyDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-purple-700">Create New Journey</DialogTitle>
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-xl font-bold text-purple-700">Create New Journey</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleEdit}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit
+            </Button>
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -874,37 +896,3 @@ export default function CreateJourneyDialog() {
                                           />
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
-                                              <img
-                                                src={action.imageUrl || "/placeholder.svg"}
-                                                alt={action.title || "Action image"}
-                                                className="w-full h-full object-cover"
-                                              />
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </CollapsibleContent>
-                                  </Collapsible>
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                Create Journey
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
