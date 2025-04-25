@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from "react"
@@ -331,7 +332,6 @@ export default function CreateJourneyDialog() {
 
   const handleEdit = () => {
     // TODO: Implement edit journey functionality
-    console.log('Edit journey:', journeyId);
     toast.info('Edit journey functionality coming soon!');
   };
 
@@ -896,3 +896,37 @@ export default function CreateJourneyDialog() {
                                           />
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
+                                              <img
+                                                src={action.imageUrl || "/placeholder.svg"}
+                                                alt={action.title || "Action image"}
+                                                className="w-full h-full object-cover"
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CollapsibleContent>
+                                  </Collapsible>
+                                ))}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                Create Journey
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
