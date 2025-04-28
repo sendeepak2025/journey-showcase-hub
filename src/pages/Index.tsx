@@ -4,6 +4,7 @@ import JourneyCard from '@/components/JourneyCard';
 import CreateJourneyDialog from '@/components/CreateJourneyDialog';
 import axios from 'axios';
 import { Loader } from 'lucide-react';  // Import the loader from lucide-react
+import { BASE_URL } from '@/App';
 
 const Index = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -13,9 +14,8 @@ const Index = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        // const response = await axios.get('http://localhost:5000/api/reports');
-        const response = await axios.get('https://journey.mahitechnocrafts.in/api/reports');
-        setReports(response.data); // Set the fetched reports to state
+        const response = await axios.get(`${BASE_URL}/reports`);
+           setReports(response.data); // Set the fetched reports to state
         setLoading(false);  // Set loading to false once the data is fetched
       } catch (err) {
         setError('There was an error fetching reports');

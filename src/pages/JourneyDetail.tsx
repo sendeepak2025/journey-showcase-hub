@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Users, Settings, FileText } from 'lucide-react';
 import axios from 'axios';
 import CreateJourneyDialog from '@/components/CreateJourneyDialog';
+import { BASE_URL } from '@/App';
 
 const JourneyDetail = () => {
   const { journeyId } = useParams<{ journeyId: string }>();
@@ -25,8 +26,7 @@ const JourneyDetail = () => {
   useEffect(() => {
     const fetchJourneyData = async () => {
       try {
-        // const response = await axios.get(`http://localhost:5000/api/reports/${journeyId}`);
-        const response = await axios.get(`https://journey.mahitechnocrafts.in/api/reports/${journeyId}`);
+        const response = await axios.get(`${BASE_URL}/reports/${journeyId}`);
         setJourneyData(response.data); // Set the fetched data
       } catch (err) {
         console.error('There was an error fetching the report:', err);

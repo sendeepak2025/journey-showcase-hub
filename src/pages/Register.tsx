@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { setToken, setUser } from '@/redux/authSlice';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
+import { BASE_URL } from '@/App';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -36,9 +37,9 @@ export default function Register() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      const response = await axios.post('https://journey.mahitechnocrafts.in/api/auth/register', {
+      // const response = await axios.post('https://journey.mahitechnocrafts.in/api/auth/register', {
 
-      // const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post(`${BASE_URL}/auth/register`, {
         email: values.email,
         password: values.password,
       });

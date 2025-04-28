@@ -38,8 +38,8 @@ export default function Login() {
       toast('Logging in...', { icon: '⏳', description: 'Please wait...' });
 
       // Make the login API request
-      const response = await axios.post('https://journey.mahitechnocrafts.in/api/auth/login', {
-      // const response = await axios.post('http://localhost:5000/api/auth/login', {
+     
+      const response = await axios.post(`${BASE_URL}/auth/login`, {
         email: values.email,
         password: values.password,
       });

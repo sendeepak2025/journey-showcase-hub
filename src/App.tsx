@@ -11,6 +11,7 @@ import PrivateRoute from "@/components/auth/PrivateRoute";
 import OpenRoute from "@/components/auth/OpenRoute";
 const queryClient = new QueryClient();
 
+export const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>

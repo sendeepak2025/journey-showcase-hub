@@ -17,6 +17,7 @@ import axios from "axios"
 import { CompassTags, CompassTag } from "./CompassTags"
 import { useSelector } from "react-redux"
 import { RootState } from "@/redux/store"
+import { BASE_URL } from "@/App"
 
 // Updated action schema to use enum type
 const actionSchema = z.object({
@@ -98,8 +99,8 @@ console.log(user)
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await axios.get(`https://journey.mahitechnocrafts.in/api/reports/${id}`);
-        // const response = await axios.get(`http://localhost:5000/api/reports/${id}`);
+        // const response = await axios.get(`https://journey.mahitechnocrafts.in/api/reports/${id}`);
+        const response = await axios.get(`${BASE_URL}/reports/${id}`);
         const data = response.data;
 
         console.log("Report Data:", data);
@@ -161,12 +162,12 @@ console.log(user)
 
       if (id) {
         // Update existing journey
-        // response = await axios.put(`http://localhost:5000/api/reports/${id}`, data, config);
-        response = await axios.put(`https://journey.mahitechnocrafts.in/api/reports/${id}`, data, config);
+        response = await axios.put(`${BASE_URL}/reports/${id}`, data, config);
+       
       } else {
         // Create new journey
-        // response = await axios.post(`http://localhost:5000/api/reports`, data, config);
-        response = await axios.post(`http://localhost:5000/api/reports`, data, config);
+        response = await axios.post(`${BASE_URL}/reports`, data, config);
+       
       }
 
       if (response.status === 200 || response.status === 201) {
