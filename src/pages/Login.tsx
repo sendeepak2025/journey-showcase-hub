@@ -12,6 +12,7 @@ import { setToken, setUser } from '@/redux/authSlice';
 import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
+import { BASE_URL } from '@/App';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
