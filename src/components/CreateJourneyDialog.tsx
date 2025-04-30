@@ -979,7 +979,7 @@ export default function CreateJourneyDialog({ id,onSave }: CreateJourneyDialogPr
                                         <span className="flex flex-col">
                                           <span>Action: {action.title || `Action ${actionIndex + 1}`}</span>
                                           <span className="text-[10px] text-gray-500">
-                                            Stage {stageIndex + 1} > Touchpoint {touchpointIndex + 1}
+                                            {`Stage ${stageIndex + 1} > Touchpoint ${touchpointIndex + 1}`}
                                           </span>
                                         </span>
                                       </span>
