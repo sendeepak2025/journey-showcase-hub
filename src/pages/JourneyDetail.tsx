@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -21,22 +20,24 @@ const JourneyDetail = () => {
     Quote: <FileText className="w-4 h-4 mr-2" />,
   };
 
+  const fetchJourneyData = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/reports/${journeyId}`);
+      const data = response.data;
+      setJourneyData(data);
 
+      // Set default activeStage dynamically from fetched data
+      if (data?.stages?.length > 0) {
+        setActiveStage(data.stages[0].name.toLowerCase()); // Set first stage as default
+      }
+    } catch (err) {
+      console.error('There was an error fetching the report:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchJourneyData = async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/reports/${journeyId}`);
-        setJourneyData(response.data); // Set the fetched data
-      } catch (err) {
-        console.error('There was an error fetching the report:', err);
-      }
-    };
-  
-    fetchJourneyData(); // Call the async function
-  }, [journeyId]); // Run when journeyId changes
-
- 
+    fetchJourneyData();
+  }, [journeyId]);
 
   if (!journeyData) return <div>Loading...</div>;
 
@@ -44,9 +45,8 @@ const JourneyDetail = () => {
   const currentJourney = journeyData;
 
   // Filter for the selected stage based on the activeStage
-  const currentStageDetails = currentJourney.stages.find((stage: any) => stage.name === activeStage);
+  const currentStageDetails = currentJourney.stages.find((stage: any) => stage.name.toLowerCase() === activeStage);
 
-  console.log(currentStageDetails)
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -62,21 +62,17 @@ const JourneyDetail = () => {
                 Last updated: {new Date(journeyData.updatedAt).toLocaleDateString()}
               </p>
             </div>
-         
-
-                        <CreateJourneyDialog id={journeyId} />
-            
+            <CreateJourneyDialog id={journeyId} onSave={fetchJourneyData} />
           </div>
-          
+
           <div className="mb-6">
             <div className="flex flex-wrap gap-3">
-              {['Awareness', 'Consideration', 'Quote']
-                .filter(stageName => 
-                  journeyData.stages.some((stage: any) => 
-                    stage.name.toLowerCase() === stageName.toLowerCase()
-                  )
-                )
-                .map((stageName, index) => (
+              {journeyData.stages.map((stage: any, index: number) => {
+                const stageName = stage.name;
+                const displayName = stageName.replace(/\b\w/g, (char) => char.toUpperCase()); // Properly capitalize stage name
+                const icon = stageIcons[displayName] || <Users className="w-4 h-4 mr-2" />; // Fallback icon
+
+                return (
                   <button
                     key={index}
                     className={`flex items-center px-4 py-2 rounded-md text-xl font-medium ${
@@ -86,10 +82,11 @@ const JourneyDetail = () => {
                     }`}
                     onClick={() => setActiveStage(stageName.toLowerCase())}
                   >
-                    {stageIcons[stageName]}
-                    {stageName}
+             
+                    {displayName}
                   </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 

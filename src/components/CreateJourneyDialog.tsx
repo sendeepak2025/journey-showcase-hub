@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect } from "react"
@@ -9,14 +8,14 @@ import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusCircle, ImagePlus, Plus, Trash2, Edit } from "lucide-react"
+import { PlusCircle, ImagePlus, Plus, Trash2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
 import axios from "axios"
-import { CompassTags, CompassTag } from "./CompassTags"
+import { CompassTags, type CompassTag } from "./CompassTags"
 import { useSelector } from "react-redux"
-import { RootState } from "@/redux/store"
+import type { RootState } from "@/redux/store"
 import { BASE_URL } from "@/App"
 
 // Updated action schema to use enum type
@@ -32,12 +31,14 @@ const touchpointSchema = z.object({
   type: z.string().min(2, "Type must be at least 2 characters"),
   duration: z.string().min(2, "Duration must be at least 2 characters"),
   comment: z.string().optional(),
-  compassTags: z.array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"])).min(2, { message: "Select at least 2 compass tags" }),
+  compassTags: z
+    .array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"]))
+    .optional(),
   actions: z.array(actionSchema).min(1, "At least one action is required"),
 })
 
 const stageSchema = z.object({
-  name: z.enum(["awareness", "consideration", "quote"]),
+  name: z.string().min(2, "Stage name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   touchpoints: z.array(touchpointSchema).min(1, "At least one touchpoint is required"),
 })
@@ -57,30 +58,33 @@ const journeyFormSchema = z.object({
 })
 
 type JourneyFormValues = z.infer<typeof journeyFormSchema>
-type ActionType = "customer" | "backoffice";
-type StageNameType = "awareness" | "consideration" | "quote";
+type ActionType = "customer" | "backoffice"
+type StageNameType = string
 
 type CreateJourneyDialogProps = {
-  id?: string;
-};
+  id?: string,
+  onSave: () => void;
+}
 
-export default function CreateJourneyDialog({ id }: CreateJourneyDialogProps) {
+export default function CreateJourneyDialog({ id,onSave }: CreateJourneyDialogProps) {
   const [open, setOpen] = React.useState(false)
   const [expandedSections, setExpandedSections] = React.useState<{ [key: string]: boolean }>({})
   const [performanceIndicators, setPerformanceIndicators] = React.useState([{ name: "Conversion", value: 0 }])
   const user = useSelector((state: RootState) => state.auth?.user ?? null)
+  const [validationErrors, setValidationErrors] = React.useState<string[]>([])
+  const [showValidationPopup, setShowValidationPopup] = React.useState(false)
 
-console.log(user)
+ 
   const [stages, setStages] = React.useState([
     {
-      name: "awareness" as StageNameType,
+      name: "Awareness",
       description: "",
       touchpoints: [
         {
           title: "",
           type: "Digital",
           duration: "",
-          comment: '',
+          comment: "",
           compassTags: [] as CompassTag[],
           actions: [
             {
@@ -95,15 +99,14 @@ console.log(user)
     },
   ])
 
-
   useEffect(() => {
     const fetchReport = async () => {
       try {
         // const response = await axios.get(`https://journey.mahitechnocrafts.in/api/reports/${id}`);
-        const response = await axios.get(`${BASE_URL}/reports/${id}`);
-        const data = response.data;
+        const response = await axios.get(`${BASE_URL}/reports/${id}`)
+        const data = response.data
 
-        console.log("Report Data:", data);
+        console.log("Report Data:", data)
 
         if (data) {
           form.reset({
@@ -113,20 +116,18 @@ console.log(user)
             keyInsight: data.keyInsight || "",
             performanceIndicators: data.performanceIndicators || [{ name: "", value: 0 }],
             stages: data.stages || [],
-          });
+          })
           setStages(data.stages || [])
         }
       } catch (error) {
-        console.error("Error fetching report:", error);
+        console.error("Error fetching report:", error)
       }
-    };
+    }
 
     if (id && open) {
-      fetchReport();
+      fetchReport()
     }
-  }, [id, open]);
-
-
+  }, [id, open])
 
   const form = useForm<JourneyFormValues>({
     resolver: zodResolver(journeyFormSchema),
@@ -150,85 +151,103 @@ console.log(user)
     form.setValue("stages", stages)
   }, [stages, form])
 
+  // Add a useEffect to ensure form validation errors are displayed when the form is submitted
+  React.useEffect(() => {
+    // When there are errors and the validation popup is shown, make sure inline errors are visible
+    if (showValidationPopup && Object.keys(form.formState.errors).length > 0) {
+      // This will ensure all form fields with errors show their error messages
+      form.trigger()
+    }
+  }, [showValidationPopup, form])
+
+  // Modify the onSubmit function to ensure form validation errors are properly collected and displayed
   const onSubmit = async (data: JourneyFormValues) => {
     try {
-      console.log("Submitting journey data:", data);
+      // Check for validation errors
+      const isValid = await form.trigger()
+      if (!isValid) {
+        // Collect all error messages
+        const errorMessages: string[] = []
+
+        // Helper function to recursively collect error messages with better formatting
+        const collectErrors = (obj: any, path = "") => {
+          for (const key in obj) {
+            if (obj[key]?.message) {
+              // Format the error message to be more user-friendly
+              const fieldName = key.charAt(0).toUpperCase() + key.slice(1)
+              errorMessages.push(`${path}${fieldName}: ${obj[key].message}`)
+            } else if (typeof obj[key] === "object" && obj[key] !== null) {
+              // For nested objects like stages, touchpoints, etc.
+              if (Array.isArray(obj[key])) {
+                // Handle arrays (like stages, touchpoints, actions)
+                obj[key].forEach((item: any, index: number) => {
+                  const itemType =
+                    key === "stages"
+                      ? "Stage"
+                      : key === "touchpoints"
+                        ? "Touchpoint"
+                        : key === "actions"
+                          ? "Action"
+                          : key === "performanceIndicators"
+                            ? "KPI"
+                            : ""
+                  collectErrors(item, `${itemType} ${index + 1} > `)
+                })
+              } else {
+                collectErrors(obj[key], `${path}${key} > `)
+              }
+            }
+          }
+        }
+
+        collectErrors(form.formState.errors)
+
+        // Show validation popup
+        setValidationErrors(errorMessages)
+        setShowValidationPopup(true)
+        return
+      }
+
+      console.log("Submitting journey data:", data)
 
       const config = {
         headers: { "Content-Type": "application/json" },
-      };
+      }
 
-      let response;
+      let response
 
       if (id) {
         // Update existing journey
-        response = await axios.put(`${BASE_URL}/reports/${id}`, data, config);
-       
+        response = await axios.put(`${BASE_URL}/reports/${id}`, data, config)
+        onSave()
       } else {
         // Create new journey
-        response = await axios.post(`${BASE_URL}/reports`, data, config);
-       
+        response = await axios.post(`${BASE_URL}/reports`, data, config)
+        onSave()
       }
 
       if (response.status === 200 || response.status === 201) {
-        const message = id ? "Journey updated successfully!" : "Journey created successfully!";
-        toast.success(message);
-        console.log("Journey saved:", response.data);
-        setOpen(false); // Close modal
-        form.reset();    // Reset form state
+        const message = id ? "Journey updated successfully!" : "Journey created successfully!"
+        toast.success(message)
+        console.log("Journey saved:", response.data)
+        setOpen(false) // Close modal
+        form.reset() // Reset form state
       } else {
-        throw new Error(`Unexpected response status: ${response.status}`);
+        throw new Error(`Unexpected response status: ${response.status}`)
       }
-
     } catch (error) {
-      console.error("Error saving journey:", error);
+      console.error("Error saving journey:", error)
 
-      let errorMessage = "Something went wrong!";
+      let errorMessage = "Something went wrong!"
       if (axios.isAxiosError(error) && error.response) {
-        errorMessage = `Error (${error.response.status}): ${error.response.data?.message || "Unknown error"}`;
+        errorMessage = `Error (${error.response.status}): ${error.response.data?.message || "Unknown error"}`
       } else if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = error.message
       }
 
-      toast.error(errorMessage);
+      toast.error(errorMessage)
     }
-  };
-
-
-  const handleCompassTagToggle = (
-    stageIndex: number,
-    touchpointIndex: number,
-    tag: CompassTag
-  ) => {
-    // Deep clone the
-    //  stages to avoid mutating original state
-
-
-    const newStages = stages.map((stage, sIdx) => {
-      if (sIdx !== stageIndex) return stage; // Only modify the selected stage
-
-      return {
-        ...stage, // Keep other properties of the stage intact
-        touchpoints: stage.touchpoints.map((tp, tIdx) => {
-          if (tIdx !== touchpointIndex) return tp; // Only modify the selected touchpoint
-
-          const currentTags = tp.compassTags || [];
-          const updatedTags = currentTags.includes(tag)
-            ? currentTags.filter((t) => t !== tag) // Remove tag if it exists
-            : [...currentTags, tag]; // Add the tag if it doesn't exist
-
-          return {
-            ...tp, // Keep other properties of the touchpoint intact
-            compassTags: updatedTags, // Update only the compassTags
-          };
-        }),
-      };
-    });
-
-    // Set the updated stages to the state
-    setStages(newStages);
-  };
-
+  }
 
 
 
@@ -260,6 +279,8 @@ console.log(user)
       setStages(newStages)
     }
   }
+
+
 
   const toggleSection = (sectionKey: string) => {
     setExpandedSections((prev) => ({
@@ -295,14 +316,14 @@ console.log(user)
     e.preventDefault()
 
     const newStage = {
-      name: "awareness" as StageNameType,
+      name: "Awareness",
       description: "",
       touchpoints: [
         {
           title: "",
           type: "Digital",
           duration: "",
-          comment: '',
+          comment: "",
           compassTags: [] as CompassTag[],
           actions: [{ title: "", description: "", imageUrl: "", type: "customer" as ActionType }],
         },
@@ -341,7 +362,7 @@ console.log(user)
       title: "",
       type: "Digital",
       duration: "",
-      comment: '',
+      comment: "",
       compassTags: [] as CompassTag[],
       actions: [{ title: "", description: "", imageUrl: "", type: "customer" as ActionType }],
     })
@@ -382,8 +403,9 @@ console.log(user)
     setStages(newStages)
 
     // Auto-expand the newly added action
-    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${newStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1
-      }`
+    const newSectionKey = `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${
+      newStages[stageIndex].touchpoints[touchpointIndex].actions.length - 1
+    }`
     setExpandedSections((prev) => ({
       ...prev,
       [newSectionKey]: true,
@@ -403,30 +425,80 @@ console.log(user)
     }
   }
 
-
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open}   onOpenChange={(value) => {
+      // Prevent dialog from closing if the validation popup is active
+      if (!showValidationPopup) {
+        setOpen(value)
+      }
+    }}>
       <DialogTrigger asChild>
-      { user && user?.role === "admin" &&  <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
-          <PlusCircle className="h-5 w-5" />
-          {
-            id ? "Edit Journey" : "Create Journey"
-          }
-        </Button>}
+        {user && user?.role === "admin" && (
+          <Button className="gap-2 bg-purple-600 hover:bg-purple-700">
+            <PlusCircle className="h-5 w-5" />
+            {id ? "Edit Journey" : "Create Journey"}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold text-purple-700">{id ? "Edit Journey" : "Create New Journey"}</DialogTitle>
-
+            <DialogTitle className="text-xl font-bold text-purple-700">
+              {id ? "Edit Journey" : "Create New Journey"}
+            </DialogTitle>
           </div>
         </DialogHeader>
         <Form {...form}>
+          {/* Update the form submission handler to ensure validation is triggered */}
           <form
             onSubmit={(e) => {
-              console.log("Form submission triggered", form.formState.errors)
-              form.handleSubmit(onSubmit)(e)
+              e.preventDefault()
+              // Trigger validation for all fields before submitting
+              form.trigger().then((isValid) => {
+                if (!isValid) {
+                  // Collect all error messages
+                  const errorMessages: string[] = []
+
+                  // Helper function to recursively collect error messages
+                  const collectErrors = (obj: any, path = "") => {
+                    for (const key in obj) {
+                      if (obj[key]?.message) {
+                        // Format the error message to be more user-friendly
+                        const fieldName = key.charAt(0).toUpperCase() + key.slice(1)
+                        errorMessages.push(`${path}${fieldName}: ${obj[key].message}`)
+                      } else if (typeof obj[key] === "object" && obj[key] !== null) {
+                        // For nested objects like stages, touchpoints, etc.
+                        if (Array.isArray(obj[key])) {
+                          // Handle arrays (like stages, touchpoints, actions)
+                          obj[key].forEach((item: any, index: number) => {
+                            const itemType =
+                              key === "stages"
+                                ? "Stage"
+                                : key === "touchpoints"
+                                  ? "Touchpoint"
+                                  : key === "actions"
+                                    ? "Action"
+                                    : key === "performanceIndicators"
+                                      ? "KPI"
+                                      : ""
+                            collectErrors(item, `${itemType} ${index + 1} > `)
+                          })
+                        } else {
+                          collectErrors(obj[key], `${path}${key} > `)
+                        }
+                      }
+                    }
+                  }
+
+                  collectErrors(form.formState.errors)
+
+                  // Show validation popup
+                  setValidationErrors(errorMessages)
+                  setShowValidationPopup(true)
+                } else {
+                  form.handleSubmit(onSubmit)(e)
+                }
+              })
             }}
             className="space-y-6"
           >
@@ -438,9 +510,13 @@ console.log(user)
                   <FormItem>
                     <FormLabel>Journey Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Customer Onboarding" {...field} />
+                      <Input
+                        placeholder="e.g., Customer Onboarding"
+                        {...field}
+                        className={form.formState.errors.title ? "border-red-500 focus:ring-red-500" : ""}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-600 font-medium" />
                   </FormItem>
                 )}
               />
@@ -584,6 +660,21 @@ console.log(user)
                   </Button>
                 </div>
 
+                {/* Add this new hierarchy diagram */}
+                <div className="bg-gray-100 p-3 rounded-lg mb-4 border border-gray-300">
+                  <h4 className="text-sm font-medium mb-2">Journey Structure:</h4>
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <div className="bg-purple-100 border border-purple-300 rounded px-2 py-1 font-medium">Stage</div>
+                    <div className="text-gray-500">→</div>
+                    <div className="bg-blue-100 border border-blue-300 rounded px-2 py-1 font-medium">Touchpoint</div>
+                    <div className="text-gray-500">→</div>
+                    <div className="bg-green-100 border border-green-300 rounded px-2 py-1 font-medium">Action</div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    Each Stage contains multiple Touchpoints, and each Touchpoint contains multiple Actions
+                  </p>
+                </div>
+
                 {stages.map((stage, stageIndex) => (
                   <Collapsible
                     key={stageIndex}
@@ -591,8 +682,13 @@ console.log(user)
                     open={expandedSections[`stage-${stageIndex}`]}
                     onOpenChange={() => toggleSection(`stage-${stageIndex}`)}
                   >
-                    <div className="flex items-center justify-between p-4 border-b">
-                      <h4 className="font-medium text-purple-800">Stage {stageIndex + 1}</h4>
+                    <div className="flex items-center justify-between p-4 border-b bg-purple-50">
+                      <h4 className="font-medium text-purple-800 flex items-center">
+                        <span className="bg-purple-700 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
+                          {stageIndex + 1}
+                        </span>
+                        Stage: {stage.name || `Stage ${stageIndex + 1}`}
+                      </h4>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
@@ -619,20 +715,16 @@ console.log(user)
                           <FormItem>
                             <FormLabel>Stage Name</FormLabel>
                             <FormControl>
-                              <select
-                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              <Input
+                                placeholder="e.g., Awareness, Consideration, etc."
                                 {...field}
                                 onChange={(e) => {
                                   field.onChange(e)
                                   const newStages = [...stages]
-                                  newStages[stageIndex].name = e.target.value as StageNameType
+                                  newStages[stageIndex].name = e.target.value
                                   setStages(newStages)
                                 }}
-                              >
-                                <option value="awareness">Awareness</option>
-                                <option value="consideration">Consideration</option>
-                                <option value="quote">Quote</option>
-                              </select>
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -685,8 +777,18 @@ console.log(user)
                             open={expandedSections[`stage-${stageIndex}-touchpoint-${touchpointIndex}`]}
                             onOpenChange={() => toggleSection(`stage-${stageIndex}-touchpoint-${touchpointIndex}`)}
                           >
-                            <div className="flex items-center justify-between p-3 border-b">
-                              <h6 className="font-medium text-sm">Touchpoint {touchpointIndex + 1}</h6>
+                            <div className="flex items-center justify-between p-3 border-b bg-blue-50">
+                              <h6 className="font-medium text-sm flex items-center">
+                                <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center mr-2 text-xs">
+                                  {touchpointIndex + 1}
+                                </span>
+                                <span className="flex flex-col">
+                                  <span>Touchpoint: {touchpoint.title || `Touchpoint ${touchpointIndex + 1}`}</span>
+                                  <span className="text-xs text-gray-500">
+                                    Part of Stage {stageIndex + 1}: {stage.name}
+                                  </span>
+                                </span>
+                              </h6>
                               <div className="flex items-center gap-2">
                                 <Button
                                   type="button"
@@ -795,10 +897,10 @@ console.log(user)
                                         className="min-h-[60px] text-sm"
                                         {...field}
                                         onChange={(e) => {
-                                          field.onChange(e);
-                                          const newStages = [...stages];
-                                          newStages[stageIndex].touchpoints[touchpointIndex].comment = e.target.value;
-                                          setStages(newStages);
+                                          field.onChange(e)
+                                          const newStages = [...stages]
+                                          newStages[stageIndex].touchpoints[touchpointIndex].comment = e.target.value
+                                          setStages(newStages)
                                         }}
                                       />
                                     </FormControl>
@@ -816,29 +918,28 @@ console.log(user)
                                     <CompassTags
                                       selectedTags={field.value || []}
                                       onTagSelect={(tag) => {
-                                        const updated = [...(field.value || []), tag];
-                                        field.onChange(updated);
+                                        const updated = [...(field.value || []), tag]
+                                        field.onChange(updated)
 
                                         // update local state for UI sync
-                                        const newStages = [...stages];
-                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
-                                        setStages(newStages);
+                                        const newStages = [...stages]
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated
+                                        setStages(newStages)
                                       }}
                                       onTagRemove={(tag) => {
-                                        const updated = (field.value || []).filter((t) => t !== tag);
-                                        field.onChange(updated);
+                                        const updated = (field.value || []).filter((t) => t !== tag)
+                                        field.onChange(updated)
 
                                         // update local state for UI sync
-                                        const newStages = [...stages];
-                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated;
-                                        setStages(newStages);
+                                        const newStages = [...stages]
+                                        newStages[stageIndex].touchpoints[touchpointIndex].compassTags = updated
+                                        setStages(newStages)
                                       }}
                                     />
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-
 
                               {/* Actions Section */}
                               <div className="space-y-2 mt-3">
@@ -861,7 +962,7 @@ console.log(user)
                                     className="border rounded-md"
                                     open={
                                       expandedSections[
-                                      `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
+                                        `stage-${stageIndex}-touchpoint-${touchpointIndex}-action-${actionIndex}`
                                       ]
                                     }
                                     onOpenChange={() =>
@@ -870,8 +971,18 @@ console.log(user)
                                       )
                                     }
                                   >
-                                    <div className="flex items-center justify-between p-2 border-b bg-gray-50">
-                                      <span className="text-xs font-medium">Action {actionIndex + 1}</span>
+                                    <div className="flex items-center justify-between p-2 border-b bg-green-50">
+                                      <span className="text-xs font-medium flex items-center">
+                                        <span className="bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center mr-2 text-xs">
+                                          {actionIndex + 1}
+                                        </span>
+                                        <span className="flex flex-col">
+                                          <span>Action: {action.title || `Action ${actionIndex + 1}`}</span>
+                                          <span className="text-[10px] text-gray-500">
+                                            Stage {stageIndex + 1} > Touchpoint {touchpointIndex + 1}
+                                          </span>
+                                        </span>
+                                      </span>
                                       <div className="flex items-center gap-2">
                                         <select
                                           value={action.type}
@@ -985,10 +1096,27 @@ console.log(user)
                                           {action.imageUrl && (
                                             <div className="relative w-12 h-12 ml-2 rounded overflow-hidden border">
                                               <img
-                                                src={action.imageUrl}
+                                                src={action.imageUrl || "/placeholder.svg"}
                                                 alt="Action preview"
                                                 className="w-full h-full object-cover"
                                               />
+                                              <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                className="absolute top-0 right-0 h-5 w-5 p-0 rounded-full"
+                                                onClick={(e) => {
+                                                  e.preventDefault()
+                                                  e.stopPropagation()
+                                                  const newStages = [...stages]
+                                                  newStages[stageIndex].touchpoints[touchpointIndex].actions[
+                                                    actionIndex
+                                                  ].imageUrl = ""
+                                                  setStages(newStages)
+                                                }}
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
                                             </div>
                                           )}
                                         </div>
@@ -1006,17 +1134,65 @@ console.log(user)
                 ))}
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-
-                {
-                  id ? "Edit Journey" : "Create Journey"
-                }
+                {id ? "Save Journey" : "Create Journey"}
               </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
+      {/* Custom Validation Error Popup */}
+      {showValidationPopup && (
+  <div
+    className="fixed inset-0 z-[99999] bg-black/50 flex items-center justify-center pointer-events-none"
+  >
+    <div
+      className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full pointer-events-auto"
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-red-600">Required Fields Missing</h3>
+        <button
+          onClick={() => setShowValidationPopup(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="border-t border-gray-200 pt-4">
+        <p className="mb-3 text-gray-700">Please fill in the following required fields:</p>
+        <ul className="list-disc pl-5 space-y-2 text-red-600">
+          {validationErrors.map((error, index) => (
+            <li key={index} className="text-sm">
+              {error}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowValidationPopup(false)}
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+        >
+          Close and Fix
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </Dialog>
-  );
+  )
 }

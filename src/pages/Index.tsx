@@ -11,18 +11,19 @@ const Index = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);  // State to track loading status
 
+  const fetchReports = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/reports`);
+         setReports(response.data); // Set the fetched reports to state
+      setLoading(false);  // Set loading to false once the data is fetched
+    } catch (err) {
+      setError('There was an error fetching reports');
+      setLoading(false);  // Set loading to false in case of an error
+      console.error(err); // Log the error for debugging
+    }
+  };
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/reports`);
-           setReports(response.data); // Set the fetched reports to state
-        setLoading(false);  // Set loading to false once the data is fetched
-      } catch (err) {
-        setError('There was an error fetching reports');
-        setLoading(false);  // Set loading to false in case of an error
-        console.error(err); // Log the error for debugging
-      }
-    };
+
 
     fetchReports(); // Call the async function
   }, []);
@@ -35,7 +36,7 @@ const Index = () => {
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <h1 className="text-3xl font-bold text-gray-800">Customer Journey Overview</h1>
           <div className="flex items-center gap-4">
-            <CreateJourneyDialog />
+            <CreateJourneyDialog onSave={fetchReports} />
             <p className="text-sm text-gray-500">Last updated: April 18, 2025</p>
           </div>
         </div>

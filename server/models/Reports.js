@@ -17,7 +17,7 @@ const TouchpointSchema = new mongoose.Schema({
 }, { _id: false });
 
 const StageSchema = new mongoose.Schema({
-  name: { type: String, enum: ['awareness', 'consideration', 'quote'], required: true },
+  name: { type: String,  required: true },
   description: { type: String, required: true },
   touchpoints: [TouchpointSchema]
 }, { _id: false });
