@@ -29,7 +29,7 @@ const actionSchema = z.object({
 const touchpointSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   type: z.string().min(2, "Type must be at least 2 characters"),
-  duration: z.string().min(2, "Duration must be at least 2 characters"),
+  duration: z.string().min(1, "Duration must be at least 1 number"),
   comment: z.string().optional(),
   compassTags: z
     .array(z.enum(["cognitive", "orchestrated", "memorable", "perceived", "activate", "social", "situational"]))
@@ -262,24 +262,38 @@ export default function CreateJourneyDialog({ id,onSave }: CreateJourneyDialogPr
     setStages(newStages)
   }
 
+  
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     stageIndex: number,
     touchpointIndex: number,
     actionIndex: number,
   ) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      // Here you would typically upload the file to your storage service
-      // For now, we'll just create a temporary URL
-      const imageUrl = URL.createObjectURL(file)
-
-      const newStages = [...stages]
-      newStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].imageUrl = imageUrl
-      setStages(newStages)
+      const formData = new FormData();
+      formData.append("file", file);
+  
+      try {
+        const response = await axios.post(`${BASE_URL}/image/upload`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+  
+        console.log(response.data);
+  
+        // Optionally update state
+        const imageUrl = response.data?.thumbnailImage?.secure_url || '';
+        const newStages = [...stages];
+        newStages[stageIndex].touchpoints[touchpointIndex].actions[actionIndex].imageUrl = imageUrl;
+        setStages(newStages);
+      } catch (error) {
+        console.error("Upload failed", error);
+      }
     }
-  }
-
+  };
+  
 
 
   const toggleSection = (sectionKey: string) => {
@@ -859,29 +873,34 @@ export default function CreateJourneyDialog({ id,onSave }: CreateJourneyDialogPr
                                   )}
                                 />
 
-                                <FormField
-                                  control={form.control}
-                                  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.duration`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-sm">Duration</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="e.g., 5-7 mins"
-                                          {...field}
-                                          className="text-sm"
-                                          onChange={(e) => {
-                                            field.onChange(e)
-                                            const newStages = [...stages]
-                                            newStages[stageIndex].touchpoints[touchpointIndex].duration = e.target.value
-                                            setStages(newStages)
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+<FormField
+  control={form.control}
+  name={`stages.${stageIndex}.touchpoints.${touchpointIndex}.duration`}
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel className="text-sm">Duration</FormLabel>
+      <FormControl>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="e.g., 5-7"
+            {...field}
+            type="number"
+            className="text-sm"
+            onChange={(e) => {
+              field.onChange(e);
+              const newStages = [...stages];
+              newStages[stageIndex].touchpoints[touchpointIndex].duration = e.target.value;
+              setStages(newStages);
+            }}
+          />
+          <span className="text-sm text-gray-500">/Mins</span>
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
                               </div>
 
                               {/* Inside the touchpoint form section, after the duration field */}

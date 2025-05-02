@@ -12,12 +12,12 @@ type TouchpointCardProps = {
   performanceValue: number
   type: string
   duration: string
-    comment?: string;
-   compassTags: CompassTag[];
+  comment?: string;
+  compassTags: CompassTag[];
   actions: {
     title: string
     description: string
-    image: string
+    imageUrl: string
     type: 'customer' | 'backoffice'
   }[]
   activeTab?: 'customer' | 'backoffice'
@@ -34,7 +34,7 @@ export default function TouchpointCard({
   compassTags,
   comment,
   activeTab = 'customer',
-  onTabChange = () => {},
+  onTabChange = () => { },
 }: TouchpointCardProps) {
   const [currentTab, setCurrentTab] = useState<'customer' | 'backoffice'>(activeTab)
 
@@ -95,52 +95,52 @@ export default function TouchpointCard({
       </div>
 
 
-{/* Compass Tags Display */}
-{compassTags.length > 0 && (
-  <div className="p-4 pt-0 flex flex-wrap gap-2">
-    {compassTags.map((tag) => {
-      const config = tagConfig[tag];
-      const label = tag.charAt(0).toUpperCase() + tag.slice(1); // Capitalized label
-      return (
-        <span
-          key={tag}
-          className={`text-xs font-medium px-2.5 py-0.5 rounded ${config.color}`}
-        >
-          {label}
-        </span>
-      );
-    })}
-  </div>
-)}
+      {/* Compass Tags Display */}
+      {compassTags.length > 0 && (
+        <div className="p-4 pt-0 flex flex-wrap gap-2">
+          {compassTags.map((tag) => {
+            const config = tagConfig[tag];
+            const label = tag.charAt(0).toUpperCase() + tag.slice(1); // Capitalized label
+            return (
+              <span
+                key={tag}
+                className={`text-xs font-medium px-2.5 py-0.5 rounded ${config.color}`}
+              >
+                {label}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
 
       <div className="flex lg:w-[35%] border-b border-gray-100 text-sm font-medium text-gray-600">
-  <button
-    className={cn(
-      "flex items-center justify-center gap-1 flex-1 px-4 py-2 border-b-2 transition",
-      currentTab === 'customer'
-        ? 'border-purple-600 text-purple-600'
-        : 'border-transparent hover:text-gray-800'
-    )}
-    onClick={() => handleTabChange('customer')}
-  >
-    <Activity className="w-4 h-4" />
-    Customer Actions
-  </button>
+        <button
+          className={cn(
+            "flex items-center justify-center gap-1 flex-1 px-4 py-2 border-b-2 transition",
+            currentTab === 'customer'
+              ? 'border-purple-600 text-purple-600'
+              : 'border-transparent hover:text-gray-800'
+          )}
+          onClick={() => handleTabChange('customer')}
+        >
+          <Activity className="w-4 h-4" />
+          Customer Actions
+        </button>
 
-  <button
-    className={cn(
-      "flex items-center justify-center gap-1 flex-1 px-4 py-2 border-b-2 transition",
-      currentTab === 'backoffice'
-        ? 'border-purple-600 text-purple-600'
-        : 'border-transparent hover:text-gray-800'
-    )}
-    onClick={() => handleTabChange('backoffice')}
-  >
-    <Settings className="w-4 h-4" />
-    Back Office Processes
-  </button>
-</div>
+        <button
+          className={cn(
+            "flex items-center justify-center gap-1 flex-1 px-4 py-2 border-b-2 transition",
+            currentTab === 'backoffice'
+              ? 'border-purple-600 text-purple-600'
+              : 'border-transparent hover:text-gray-800'
+          )}
+          onClick={() => handleTabChange('backoffice')}
+        >
+          <Settings className="w-4 h-4" />
+          Back Office Processes
+        </button>
+      </div>
 
 
       <div className="p-4 space-y-3">
@@ -149,9 +149,9 @@ export default function TouchpointCard({
           .map((action, index) => (
             <div key={index} className="flex items-center bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
               <div className="w-14 h-14 rounded-md flex items-center justify-center bg-gray-50 border border-gray-100 mr-4">
-                {action.image ? (
+                {action.imageUrl ? (
                   <img
-                    src={action.image || "/placeholder.svg"}
+                    src={action.imageUrl || "/placeholder.svg"}
                     alt={action.title}
                     className="w-10 h-10 object-contain"
                   />
