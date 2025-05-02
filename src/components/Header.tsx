@@ -62,7 +62,7 @@ const Header = () => {
                 strokeLinejoin="round"
               />
             </svg>
-            <Link to='/' className="text-xl font-bold text-gray-800">Journey Showcase Hub</Link>
+            <Link to='/' className="text-xl font-bold text-gray-800">Journey Showcase Management</Link>
           </div>
 
           {/* User Profile and Logout */}
